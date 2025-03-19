@@ -67,9 +67,9 @@ Template Post Type: post, page, event
                     $department_id = get_post_meta(get_the_ID(), 'department_id', true);
 
                     // Display department details
-                    if (!empty($department_id)) {
-                        echo do_shortcode('[department_details department="' . esc_attr($department_id) . '" show="name,address,phone,fax"]');
-                    }
+                    // if (!empty($department_id)) {
+                    //     echo do_shortcode('[department_details department="' . esc_attr($department_id) . '" show="name,address,phone,fax"]');
+                    // }
 
                     // Display staff directory
                     if (!empty($department_id)) {
@@ -119,8 +119,19 @@ Template Post Type: post, page, event
         </div><!-- #content -->
     
         <?php 
+            // Retrieve department details
             $department_name = get_post_meta(get_the_ID(), 'department_name', true);
-            get_sidebar(null, array('department_name' => esc_attr($department_name))); 
+            $department_id = get_post_meta(get_the_ID(), 'department_id', true);
+
+            // Store them in global variables
+            global $department_data;
+            $department_data = array(
+                'department_name' => esc_attr($department_name),
+                'department_id' => $department_id
+            );
+
+            // Call the sidebar
+            get_sidebar();
         ?>
 
     

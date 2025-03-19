@@ -7,6 +7,7 @@ add_action('wp_enqueue_scripts', 'citygov_child_enqueue_styles');
 // Add a filter to modify shortcode attributes
 function modify_shortcode_atts($atts) {
     global $current_department_name;
+    global $current_department_id;
     
     // Look for placeholder in all attributes
     if (!empty($current_department_name)) {
@@ -16,12 +17,19 @@ function modify_shortcode_atts($atts) {
             }
         }
     }
-    
+    if (!empty($current_department_id)) {
+        foreach ($atts as $key => $value) {
+            if (is_string($value)) {
+                $atts[$key] = str_replace('{department_id}', $current_department_id, $value);
+            }
+        }
+    }
+
     return $atts;
 }
 add_filter('shortcode_atts_tribe_events_list', 'modify_shortcode_atts', 10, 1);
 add_filter('shortcode_atts_tribe_events', 'modify_shortcode_atts', 10, 1);
-
+add_filter('shortcode_atts_department_details', 'modify_shortcode_atts', 10, 1);
 // Fix the pagelist_ext shortcode so it only shows children (and not grandchildren) of the current page
 
 // Remove the original shortcode
