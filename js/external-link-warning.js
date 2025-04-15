@@ -25,7 +25,12 @@ document.addEventListener("DOMContentLoaded", function () {
             countdownEl.textContent = countdown;
             if (countdown <= 0) {
               clearInterval(countdownInterval);
-              window.open(currentLink, '_blank');
+              // simulate click on the hidden anchor
+              if (currentLink) {
+                realLink.href = currentLink;
+                realLink.click();
+              }
+              // close the modal
               closeModal();
             }
           }, 1000);
