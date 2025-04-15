@@ -1,8 +1,42 @@
 <?php
 function citygov_child_enqueue_styles() {
-    wp_enqueue_style('parent-style', get_template_directory_uri() . '/style.css');
+    // Load the parent stylesheet directly from the parent directory
+    wp_enqueue_style('citygov-style', get_template_directory_uri() . '/style.css');
+
+    // Then load the child stylesheet
+    wp_enqueue_style('citygov-child-style', get_stylesheet_uri(), array('citygov-style'), wp_get_theme()->get('Version'));
 }
 add_action('wp_enqueue_scripts', 'citygov_child_enqueue_styles');
+//Register a separate sidebar for the department homepage
+function my_theme_widgets_init() {
+    register_sidebar( array(
+        'name'          => __( 'Department Homepage Sidebar', 'theme_text_domain' ),
+        'id'            => 'department-homepage',
+        'description'   => __( 'Widgets in this area will be shown on the department homepage template.', 'theme_text_domain' ),
+        'before_widget' => '<div id="%1$s" class="sidebar_item">',
+        'after_widget'  => '</div>',
+        'before_title'  => '<h2 class="widgettitle">',
+        'after_title'   => '</h2>',
+    ) );
+}
+add_action( 'widgets_init', 'my_theme_widgets_init' );
+
+function dynamic_doc_library_shortcode($atts) {
+    // Get the URL parameter if it exists
+    $doc_tag = isset($_GET['doc_tag']) ? sanitize_text_field($_GET['doc_tag']) : '';
+
+    // Merge it with any shortcode attributes passed directly
+    $atts = shortcode_atts(array(
+        'tag' => $doc_tag,
+    ), $atts);
+
+    // Return the original shortcode with dynamic attribute
+    return do_shortcode('[doc_library doc_tag="' . $doc_tag . '"]');
+}
+
+// Register the dynamic shortcode
+add_shortcode('dynamic_doc_library', 'dynamic_doc_library_shortcode');
+
 
 // Add a filter to modify shortcode attributes
 function modify_shortcode_atts($atts) {

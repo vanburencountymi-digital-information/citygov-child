@@ -65,12 +65,16 @@ Template Post Type: post, page, event
                     <?php
                     // Retrieve the custom field 'department_id' for the current page
                     $department_id = get_post_meta(get_the_ID(), 'department_id', true);
+                    $department_name = get_post_meta(get_the_ID(), 'department_name', true);
 
                     // Display department details
                     // if (!empty($department_id)) {
                     //     echo do_shortcode('[department_details department="' . esc_attr($department_id) . '" show="name,address,phone,fax"]');
                     // }
-
+                    if (!empty($department_name)) {
+                        echo '<h2>' . esc_html($department_name) . ' Documents </h2>';
+                        echo do_shortcode('[doc_library doc_tag="' . esc_attr($department_name) . '"]');
+                    }
                     // Display staff directory
                     if (!empty($department_id)) {
                         echo '<h2>Department Staff</h2>';
@@ -131,7 +135,7 @@ Template Post Type: post, page, event
             );
 
             // Call the sidebar
-            get_sidebar();
+            get_sidebar('department-homepage');
         ?>
 
     

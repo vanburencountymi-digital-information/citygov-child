@@ -3,3 +3,92 @@ Theme Name: CityGov Child
 Template: citygov
 Version: 1.0
 */
+
+.department-subpage-header {
+    background: #cbab7a;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.department-subpage-header .dsh-inner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.department-subpage-header .dept-badge {
+    flex-shrink: 0;
+}
+
+.department-subpage-header .badge-img {
+    width: auto !important;
+    height: 200px !important;
+    object-fit: contain;
+    margin-top: 50px;
+    border-radius: 50%;
+}
+
+.department-subpage-header .dept-title-area {
+    flex-grow: 1;
+}
+
+.department-subpage-header .entry-title {
+    font-size: 50px;
+}
+
+.subpage-breadcrumbs {
+    font-size: 0.85em;
+    color: #777;
+    margin-bottom: 5px;
+}
+
+.subpage-breadcrumbs a {
+    color: black;
+}
+
+.subpage-breadcrumbs span {
+    color: black !important;
+}
+
+span.crumb:after {
+    color: black;
+}
+
+/* Compact Article Styling */
+.compact-article {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.compact-article .entry {
+    padding: 1rem 1rem;
+    margin: 0;
+}
+
+.compact-article .entry h1,
+.compact-article .entry h2,
+.compact-article .entry h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.compact-article .entry p {
+    margin: 0.5rem 0;
+}
+
+.compact-article .main-breadcrumbs {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.item_inn.p-border {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+div.entry h1.entry-title {
+    font-size: 75px !important;
+    border-bottom: 1px solid black;
+}

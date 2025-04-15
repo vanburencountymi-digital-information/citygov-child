@@ -17,13 +17,15 @@ $current_department_id = $department_id;
 
 <div id="sidebar" class="fourcol woocommerce p-border">
 
-    <?php if (is_active_sidebar('tmnf-sidebar')) { ?>
+    <?php if (is_active_sidebar('department-homepage')) { ?>
         
         <div class="widgetable p-border">
-            <?php dynamic_sidebar('tmnf-sidebar'); ?>
+            <?php dynamic_sidebar('department-homepage'); ?>
             
         </div>
         
+    <?php } else { ?>
+        <p>No widgets found for the department homepage sidebar.</p>
     <?php } ?>
         
 </div><!-- #sidebar -->
