@@ -1,12 +1,13 @@
 document.addEventListener("DOMContentLoaded", function () {
     let currentLink = null;
-    let countdown = 5;
+    let countdown = 10;
     let countdownInterval;
   
     const modal = document.getElementById("exit-modal");
     const countdownEl = document.getElementById("countdown");
     const continueBtn = document.getElementById("continue-btn");
     const cancelBtn = document.getElementById("cancel-btn");
+    const realLink = document.getElementById("real-external-link");
   
     document.querySelectorAll('a[href^="http"]').forEach(link => {
       const isExternal = link.hostname !== window.location.hostname;
@@ -39,7 +40,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   
     continueBtn.addEventListener("click", function () {
-      if (currentLink) window.open(currentLink, '_blank');
+      if (currentLink) {
+        realLink.href = currentLink;
+        realLink.click();
+      }
       closeModal();
     });
   
