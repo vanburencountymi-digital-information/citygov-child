@@ -21,6 +21,17 @@ function my_theme_widgets_init() {
 }
 add_action( 'widgets_init', 'my_theme_widgets_init' );
 
+function enqueue_external_link_warning_script() {
+    wp_enqueue_script(
+        'external-link-warning',
+        get_stylesheet_directory_uri() . '/js/external-link-warning.js',
+        array(), // dependencies (e.g., jQuery)
+        null,     // version
+        true      // in footer
+    );
+}
+add_action('wp_enqueue_scripts', 'enqueue_external_link_warning_script');
+
 function dynamic_doc_library_shortcode($atts) {
     // Get the URL parameter if it exists
     $doc_tag = isset($_GET['doc_tag']) ? sanitize_text_field($_GET['doc_tag']) : '';
