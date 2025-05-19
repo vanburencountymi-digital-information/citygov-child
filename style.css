@@ -2,7 +2,49 @@
 Theme Name: CityGov Child
 Template: citygov
 Version: 1.0
+
+TABLE OF CONTENTS:
+1. General Styles
+2. Department Subpage Header
+3. Breadcrumbs
+4. Article Styling
+   4.1 Compact Article
+   4.2 Sheriff Article
+5. Sheriff Department Specific
+   5.1 Sheriff Header
+   5.2 Sheriff Footer
+6. UI Components
+   6.1 Phone Number
+   6.2 Exit Modal
+   6.3 Quick Links
+7. Post Navigation and Similar Posts
+   7.1 Similar Posts Section
+   7.2 Post Navigation
+8. Document Library Pro Styling
+   8.1 Single Document Page
 */
+
+/* ==========================================================================
+   1. General Styles
+   ========================================================================== */
+
+.item_inn.p-border {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+div.entry h1.entry-title {
+    font-size: 75px;
+    border-bottom: 1px solid black;
+}
+
+
+
+
+/* ==========================================================================
+   2. Department Subpage Header
+   ========================================================================== */
 
 .department-subpage-header {
     background: #cbab7a;
@@ -37,6 +79,10 @@ Version: 1.0
     font-size: 50px;
 }
 
+/* ==========================================================================
+   3. Breadcrumbs
+   ========================================================================== */
+
 .subpage-breadcrumbs {
     font-size: 0.85em;
     color: #777;
@@ -55,7 +101,13 @@ span.crumb:after {
     color: black;
 }
 
-/* Compact Article Styling */
+/* ==========================================================================
+   4. Article Styling
+   ========================================================================== */
+
+/* 4.1 Compact Article
+   ========================================================================== */
+
 .compact-article {
     padding-top: 1rem;
     padding-bottom: 1rem;
@@ -82,21 +134,471 @@ span.crumb:after {
     font-size: 0.9rem;
 }
 
-.item_inn.p-border {
-    border: none;
-    padding: 0;
+/* 4.2 Sheriff Article
+   ========================================================================== */
+  
+.sheriff-article {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.sheriff-article .entry-title {
+    font-size: 2.5rem;
+    margin-top: 1rem;
+    font-weight: 700;
+}
+
+.sheriff-post-title {
+    font-size: 2.5rem;
+    margin-top: 1rem;
+    font-weight: 700;
+}
+
+.postbar.fullwidth {
+    display: flex;
+    justify-content: center;
+}
+
+.sheriff-article .main-breadcrumbs {
+    display: flex;
+    justify-content: space-between;
+    padding-left: 2%;
+    padding-right: 2%;
+}
+
+.sheriff-article .main-breadcrumbs a {
+    display: inline-block;
+    padding: 0.5em 1em;
+    background-color: #a3473b;
+    color: white;
+    text-decoration: none;
+    border-radius: 0.5em;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    font-weight: 600;
+}
+  
+.sheriff-article .main-breadcrumbs a:hover,
+.sheriff-article .main-breadcrumbs a:focus {
+    transform: scale(1.05);
+    background-color: #902f29; /* slightly darker red for hover */
+}
+
+/* 4.3 General Department Blog Post Styling
+   ========================================================================== */
+
+/* 4.3.1 General Department Blog Post Styling: Main Content */
+
+.main-post-content li {
+	padding: .5rem 1rem .5rem;
+}
+
+.entry-content {
+    padding-bottom: 2rem;
+}
+
+.entry-content p {
+    padding-bottom: 0.5rem;
+}
+
+.entry-content ol.wp-block-list {
+    padding-left: 1rem;
+}
+
+body.post-template-template-department-blog-single-page * {
+  overflow: visible;
+}
+
+body.post-template-template-department-blog-single-page .content-area {
+  background-color: rgba(10,10,10,0.05);
+}
+
+body.post-template-template-department-blog-single-page h1 {
+  font-size: 48px !important;
+}
+
+.sticky-sidebar .sidebar-content { 
+  background: #fff; 
+  padding: 1rem; 
+  border-radius: 8px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+
+
+.sticky-sidebar-item {
+	background-color: #fff !important;
+	box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset !important;
+}
+
+
+.sticky-sidebar-item h2,
+.sticky-sidebar-item h3 {
+    text-align: center;
+    border-bottom: 1px solid rgba(0,0,0,.15);
+    padding-bottom: 1rem;
+}
+
+.sticky-sidebar h3 { margin-top: 0; }
+
+.button { display: inline-block; background: #0073aa; color: #fff; padding: 0.5rem 1rem; border-radius: 4px; text-decoration: none; }
+
+.button:hover { background: #005077; }
+
+.custom-single-post-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding-left: 0 !important;
+  box-sizing: border-box !important;
+  row-gap: 0 !important;
+}
+
+.department-header {
+  width: 100% !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0;
+  order: -1 !important; /* Ensures header appears at the top */
+}
+
+.main-post-content-wrapper {
+  display: flex !important;
+  gap: 2rem !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+}
+
+.main-post-content { 
+  flex: 0 0 70% !important;
+  overflow: hidden;
+  margin-top: 2rem;
+  margin-bottom: 0;
+  padding-left: 3rem;
+  padding-right: 3rem;
+  padding-top: 0;
+  background-color: white;
+  border-radius: 0.5rem !important;
+  box-sizing: border-box !important;
+  box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+}
+
+.sidebar-content {
+  background-color: white !important;
+  border-radius: 0.5rem !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  padding-top: 0 !important;
+}
+
+.custom-single-post-layout img {
+  margin: 1rem auto;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  max-width: 100%;
+}
+
+.sticky-sidebar { 
+  flex: 0 0 30% !important;
+  position: sticky;
+  top: 6rem;
+  align-self: flex-start;
+  z-index: 1;
+  margin-top: 2rem;
+  box-sizing: border-box !important;
+  max-width: 30% !important;
+  overflow: visible !important;
+}
+
+div.entry-meta {
+  color: #a3473b;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.entry-meta span {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.department-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  width: 100%;
+}
+
+.department-navigation a {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #a3473b;
+  color: white;
+  text-decoration: none;
+  border-radius: 0.5em;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  font-weight: 600;
+}
+
+.department-navigation a:hover,
+.department-navigation a:focus {
+  transform: scale(1.05);
+  background-color: #902f29; /* slightly darker red for hover */
+}
+
+@media (max-width: 1024px) {
+  .sticky-sidebar { top: 6rem; }
+}
+
+@media (max-width: 768px) {
+  .main-post-content-wrapper {
+    flex-direction: column;
+  }
+  
+  .main-post-content,
+  .sticky-sidebar {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .sticky-sidebar {
+    position: static;
+    top: auto;
+  }
+}
+
+.post-featured-image img {
+	margin-top: 2.5rem;
+    display: block;
+    width: 100%;
+    /* light background behind the image so the shadow shows */
+    background-color: #f0f0f0;
+    /* inner shadows for the "imprint" effect */
+    box-shadow:
+        inset 0 4px 8px rgba(0, 0, 0, 0.4),   /* dark shadow at top */
+        inset 0 -4px 8px rgba(255, 255, 255, 0.6); /* light highlight at bottom */
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    /* optional slight nudge to enhance the pressed feel */
+    transform: translateY(1px);
+}
+
+.wpa-content-summary-inner li{
+	padding-bottom: 1rem;
+}
+
+
+/* 4.3.2 General Department Blog Post Styling: Header */
+.department-header {
+  background-color: #f5f5f5;
+  padding: 2rem 1rem;
+  font-family: 'Helvetica Neue', sans-serif;
+  width: 100%;
+}
+
+.department-header__container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.department-header__top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 60px;
+  margin-bottom: 1.5rem;
+}
+
+.department-header__logo img {
+  max-height: 100px;
+  width: auto;
+}
+
+.department-header__info {
+  flex: 1;
+}
+
+.department-header__title {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  color: #002b45;
+}
+
+.department-header__address,
+.department-header__contact {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.department-header__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.department-header__officer {
+  flex: 1;
+  min-width: 200px;
+}
+
+.department-header .officer-name {
+  font-weight: bold;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.department-header .officer-title {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+/* ==========================================================================
+   5. Sheriff Department Specific
+   ========================================================================== */
+
+/* 5.1 Sheriff Header
+   ========================================================================== */
+
+.sheriff-header {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.sheriff-header__container {
+    justify-content: center;
+}
+
+.sheriff-header__container * {
+    text-align: center;
+    color: #a3473b;
+}
+  
+/* Top row layout */
+.sheriff-header__top {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: 40px;
+}
+  
+/* Logo */
+.sheriff-header__logo img {
+    display: block;
+    max-height: 86px;
+    margin-right: 1rem;
+}
+  
+/* Main info */
+.sheriff-header__title {
+    border-top: 5px solid #a3473b;
+    border-bottom: 5px solid #a3473b;
+    padding-left: 5px;
+    padding-right: 5px;
     margin: 0;
+    font-size: 1.75rem;
+    text-transform: uppercase;
 }
 
-div.entry h1.entry-title {
-    font-size: 75px !important;
-    border-bottom: 1px solid black;
+.sheriff-header__address,
+.sheriff-header__contact {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+  
+/* Bottom row layout */
+.sheriff-header__bottom {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+}
+  
+/* Officer styling */
+.sheriff-header__officer {
+    text-align: left;
 }
 
-/* Exit Modal */
+.officer-name {
+    margin: 0;
+    font-weight: bold;
+}
+
+.officer-title {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* 5.2 Sheriff Footer
+   ========================================================================== */
+
+.sheriff-post-footer {
+background-color: #f9f6f6; /* soft light color */
+border: 1px solid #a3473b;
+border-radius: 1em;
+padding: 2em;
+padding-top: 1em;
+margin-top: 2em;
+margin-bottom: 2em;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* soft lift */
+}
+
+.sheriff-post-footer h2 {
+color: #a3473b;
+font-size: 1.5em;
+margin-top: 0;
+}
+
+.sheriff-post-footer a {
+color: #a3473b;
+text-decoration: underline;
+}
+
+.sheriff-post-footer a:hover {
+text-decoration: none;
+}
+
+.sheriff-footer-bold {
+    font-weight: bold;
+}
+  
+
+/* ==========================================================================
+   6. UI Components
+   ========================================================================== */
+
+/* 6.1 Phone Number
+   ========================================================================== */
+
+.phone-number {
+    white-space: nowrap;
+    text-decoration: none; /* removes underline */
+    color: inherit; /* keeps normal text color */
+    cursor: pointer; /* shows pointer on hover */
+}
+/* 6.2 Email Address
+   ========================================================================== */
+
+.email-address {
+    white-space: nowrap;
+    text-decoration: none; /* removes underline */
+    color: inherit; /* keeps normal text color */
+    cursor: pointer; /* shows pointer on hover */
+}
+/* 6.3 Exit Modal
+   ========================================================================== */
+
 .modal.hidden {
     display: none;
-  }
+}
 
 .modal {
     position: fixed;
@@ -106,7 +608,7 @@ div.entry h1.entry-title {
     justify-content: center;
     align-items: center;
     z-index: 9999;
-  }
+}
 
 .modal-content {
     background: #fff;
@@ -114,9 +616,877 @@ div.entry h1.entry-title {
     border-radius: 5px;
     max-width: 400px;
     text-align: center;
-  }
+}
 
 .modal-content p {
     margin-bottom: 1em;
 }
+
+/* 6.4 Quick Links
+   ========================================================================== */
+
+.quick-links-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin: 1rem 0 0.5rem;
+    color: #fff;
+    padding-left: 1rem;
+}
+
+/* 6.5 Podcast Player (Sidebar-Friendly)
+   ========================================================================== */
+.podcast-player {
+  background: #f9f7f4;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 2px 10px rgba(139, 130, 120, 0.1);
+  border: 1px solid #e0e0e0;
+  max-width: 100%;
+  margin: 0 0;
+}
+
+/* ---------- progress bar ---------- */
+.progress-container {
+    margin: 0.75rem 0;
+    position: relative; /* Add positioning context */
+    padding: 0 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    width: calc(100% + 1rem);
+  }
   
+  .progress-container input[type="range"] {
+    /* remove all the native styling */
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;                /* kill extra UA margin/padding */
+    width: 100%;
+    height: 0.4rem;
+    /* Updated color scheme using brand colors */
+    background: linear-gradient(to right, #a3473b, #a3473b) no-repeat, #e0e0e0;
+    background-size: 0% 100%;
+    transition: background-size 0.1s ease-in-out;
+    border-radius: 0.2rem;
+    /* Fix the edge positioning */
+    box-sizing: border-box;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    width: calc(100% + 1rem);
+    padding: 0;
+  }
+  
+  /* Hide the native "track" so our input's bg-gradient shows through */
+  .progress-container input[type="range"]::-webkit-slider-runnable-track {
+    background: transparent;
+    height: 0.4rem;
+    width: 100%;
+    border-radius: 0.2rem;
+  }
+  .progress-container input[type="range"]::-moz-range-track {
+    background: transparent;
+    height: 0.4rem;
+    width: 100%;
+    border-radius: 0.2rem;
+  }
+  
+  /* Style the thumb so it's centered and can travel the full width */
+  .progress-container input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    background: #fff;
+    border: 2px solid #a3473b;
+    border-radius: 50%;
+    margin-top: -0.3rem;    /* center over the 0.4rem track */
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .progress-container input[type="range"]::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    background: #fff;
+    border: 2px solid #a3473b;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: background 0.2s, border-color 0.2s;
+  }
+  
+  /* Hover and focus states */
+  .progress-container input[type="range"]:hover::-webkit-slider-thumb {
+    background: #cbab7a;
+    border-color: #6d5c52;
+  }
+  .progress-container input[type="range"]:hover::-moz-range-thumb {
+    background: #cbab7a;
+    border-color: #6d5c52;
+  }
+  .progress-container input[type="range"]:focus::-webkit-slider-thumb {
+    background: #cbab7a;
+    border-color: #6d5c52;
+    box-shadow: 0 0 0 3px rgba(163, 71, 59, 0.3);
+  }
+  .progress-container input[type="range"]:focus::-moz-range-thumb {
+    background: #cbab7a;
+    border-color: #6d5c52;
+    box-shadow: 0 0 0 3px rgba(163, 71, 59, 0.3);
+  }
+  
+  /* time display at right edge */
+  .time-display {
+    font-size: 0.8rem;
+    color: #6d5c52;
+    text-align: right;
+    margin-top: 0.25rem;
+    font-weight: 500;
+  }
+  
+  /* Podcast info section */
+  .podcast-info {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+  
+  .podcast-cover {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    border: 1px solid #b5a382;
+  }
+  
+  .podcast-meta {
+    flex: 1;
+  }
+  
+  .podcast-title {
+    margin: 0 0 0.5rem;
+    color: #6d5c52;
+    font-size: 1.2rem;
+  }
+  
+  .podcast-host, .podcast-episode {
+    margin: 0 0 0.25rem;
+    color: #8b8278;
+    font-size: 0.9rem;
+  }
+  
+  /* Controls section */
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 0.75rem 0;
+  }
+  
+  .controls button {
+    background: linear-gradient(to bottom, #ffffff, #e6e6e6);
+    border: 1px solid #ccc;
+    padding: 0.5em 1em;
+    color: #a3473b;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+      /* Smooth transitions */
+    transition: 
+        background 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.1s ease;
+
+     /* Shadow for the raised effect */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2),rgba(0, 0, 0, 0.4) 0px 2px 4px;
+    padding: 0;
+  }
+  
+  .controls button:hover {
+    background: #cbab7a;
+    color: white;
+    border-color: #6d5c52;
+      /* Lift up on hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3),rgba(0, 0, 0, 0.4) 0px 2px 4px;
+  }
+
+  .controls button:active {
+    /* Pressed look */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  .controls button#playPause {
+    background: #a3473b;
+    color: white;
+    border-color: #6d5c52;
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.5rem;
+  }
+
+  .controls button#playPause:focus {
+    /* Accessible focus ring */
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(100, 150, 250, 0.5);
+  }  
+  
+  .controls button#playPause:hover {
+    background: #b58d4a;
+    transform: scale(1.05);
+  }
+  
+  /* Volume and speed controls */
+  .volume-settings {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+
+  #skipBack svg,
+  #skipForward svg,
+  #playPause svg {
+    transform: scale(2);
+  }
+
+  #skipForward text,
+  #skipBack text {
+    display: none;
+  }
+
+  .volume-control, .speed-control {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .control-label {
+    color: #8b8278;
+    font-size: 0.8rem;
+    font-weight: 500;
+    min-width: 3.5rem;
+  }
+  
+  #volumeSlider {
+    width: 6rem;
+    padding: 0;
+    height: 0.3rem;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #fff, #a3473b) no-repeat, #e0e0e0;
+    background-size: 100% 100%;
+    border-radius: 0.15rem;
+    margin-bottom: 0;
+  }
+  
+  #volumeSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 0.5rem;
+    height: 0.8rem;
+    background: white;
+    border: 2px solid #7a8c85;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  
+  #volumeSlider::-moz-range-thumb {
+    width: 0.5rem;
+    height: 0.8rem;
+    background: white;
+    border: 2px solid #7a8c85;
+    border-radius: 0;
+    cursor: pointer;
+  }
+  
+  #speedSelector {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #b5a382;
+    background: white;
+    color: #6d5c52;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin: 0;
+    width: auto;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  #speedSelector:hover {
+    border-color: #a3473b;
+  }
+  
+  /* Downloads section */
+  .downloads {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: nowrap;
+  }
+  
+  .download-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #b3c7d6;
+    color: #333;
+    text-decoration: none;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    margin: 1rem 0;
+  }
+  
+  .download-button:hover {
+    background: #7a8c85;
+    color: white;
+  }
+
+  .download-icon {
+    padding-right: 1.5rem;
+  }
+
+  /* ---------- screen-reader only ---------- */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+  
+  /* 6.6 PDF Download (Sidebar-Friendly)
+  ========================================================================== */
+
+  .pdf-download {
+    margin-top: 1rem;
+    background: #f9f7f4;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(139, 130, 120, 0.1);
+    border: 1px solid #e0e0e0;
+    max-width: 100%;
+    margin-top: 1rem;
+    font-family: inherit;
+  }
+
+  .pdf-download h3 {
+    margin: 0 0 0.5rem;
+    color: #6d5c52;
+    font-size: 1.2rem;
+  }
+
+  /* 6.7 PDF Embedder
+  ========================================================================== */
+
+  .pdf-embed-wrapper {
+    position: relative;
+    min-height: 300px;
+  }
+  
+  .pdf-loading-message {
+    text-align: center;
+    padding: 2rem;
+    font-size: 1.2rem;
+    color: #666;
+  }
+  
+  .spinner {
+    margin: 1rem auto;
+    border: 4px solid #ccc;
+    border-top: 4px solid #0073aa;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .pdf-fallback {
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .pdf-fallback img {
+    max-width: 300px;
+    height: auto;
+    margin-bottom: 1rem;
+  }
+  
+  
+
+/* ==========================================================================
+   7. Post Navigation and Similar Posts
+   ========================================================================== */
+
+/* 7.1 Similar Posts Section
+   ========================================================================== */
+
+.similar-posts-section {
+  max-width: 1200px;
+  margin: 2rem auto 4rem;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Match the width of the custom-single-post-layout */
+.similar-posts-section,
+.post-navigation-section {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  box-sizing: border-box;
+}
+
+/* Ensure the inner content of these sections aligns with the main layout */
+.similar-posts-container,
+.post-navigation-container {
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Adjust the post-navigation-container to match the similar-posts-section */
+.post-navigation-container {
+  margin-bottom: 2rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Make sure the custom-single-post-layout and these sections use the same max-width */
+@media (min-width: 1200px) {
+  .custom-single-post-layout,
+  .similar-posts-section,
+  .post-navigation-section {
+    max-width: 1200px;
+    width: 100%;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    box-sizing: border-box;
+  }
+  
+  /* Account for the 2rem gap in the custom-single-post-layout */
+  .custom-single-post-layout {
+    gap: 2rem !important;
+  }
+}
+
+.similar-posts-title {
+  font-size: 1.75rem;
+  color: #a3473b;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #cbab7a;
+}
+
+.similar-posts-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.similar-post {
+  display: flex;
+  flex-direction: column;
+  background: #f9f9f9;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.similar-post:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.similar-post-thumbnail {
+  display: block;
+  height: 180px;
+  overflow: hidden;
+  margin: 1rem auto;
+}
+
+.similar-post-thumbnail img {
+  width: auto;
+  margin: 1rem auto;
+  max-width: 75%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.similar-post:hover .similar-post-thumbnail img {
+  transform: scale(1.05);
+}
+
+.similar-post-content {
+  padding: 1rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.similar-post-title {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+  line-height: 1.3;
+}
+
+.similar-post-title a {
+  color: #333;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.similar-post-title a:hover {
+  color: #a3473b;
+}
+
+.similar-post-meta {
+  font-size: 0.85rem;
+  color: #777;
+  margin-top: auto;
+}
+
+/* 7.2 Post Navigation
+   ========================================================================== */
+
+.post-navigation-section {
+  max-width: 1200px;
+  padding: 2rem 4rem;
+}
+
+.post-navigation-container {
+  margin-bottom: 2rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.post-navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.nav-previous, .nav-next {
+  flex: 1;
+  max-width: 48%;
+}
+
+/* This ensures next post stays on the right even when previous is missing */
+.nav-previous:empty {
+  display: block; /* Keep the space even when empty */
+}
+
+.nav-next {
+  text-align: right;
+  margin-left: auto; /* Push to the right side */
+}
+
+.nav-subtitle {
+  display: block;
+  font-size: 0.85rem;
+  color: #777;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  gap: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.nav-next .nav-link {
+  flex-direction: row-reverse;
+}
+
+.nav-link:hover {
+  transform: translateX(-5px);
+}
+
+.nav-next .nav-link:hover {
+  transform: translateX(5px);
+}
+
+.nav-link img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  border: 1px solid #eee;
+}
+
+.nav-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #a3473b;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .similar-posts-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .post-navigation {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .nav-previous, .nav-next {
+    max-width: 100%;
+  }
+  
+  .nav-next {
+    text-align: left;
+  }
+  
+  .nav-next .nav-link {
+    flex-direction: row;
+  }
+  
+  .nav-link:hover, .nav-next .nav-link:hover {
+    transform: translateY(-3px);
+  }
+}
+
+@media (max-width: 480px) {
+  .similar-posts-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .similar-post-thumbnail {
+    height: 200px;
+  }
+}
+
+/* ==========================
+   Logo styles
+   ========================== */
+.logo-container {
+  display: inline-block;
+  text-align: center;
+  font-family: Arial, sans-serif; /* swap in your brand font if needed */
+}
+
+.logo-text {
+  margin: 0;
+  font-style: italic;
+  font-size: 2.5rem;              /* adjust to taste */
+  line-height: 1;
+  padding-bottom: 1rem;
+}
+
+.logo-word {
+    font-size: 6rem;
+}
+.logo-word.digital {
+  color: #000;
+}
+
+.logo-word.information {
+  color: #8B0000;                  /* approximate the red from your PNG */
+}
+
+.logo-divider {
+  height: 1rem;                    /* thickness of the "white bar" */
+  background-color: #fff;          /* matches page background */
+}
+
+.logo-department {
+  background-color: #000;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 2.5em;          /* spreads the letters out */
+  padding: 0.5rem 1rem;
+  font-size: 1.5rem;                 /* adjust so it balances with the top text */
+}
+
+/* Adjust logo container in department header */
+.department-header__logo .logo-container {
+  margin-right: 1.5rem;
+}
+
+/* ==========================================================================
+   8. Document Library Pro Styling
+   ========================================================================== */
+
+/* 8.1 Single Document Page
+   ========================================================================== */
+
+body.single-dlp_document .content-area {
+  background-color: white;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+body.single-dlp_document .custom-single-post-layout {
+  padding: 1rem 1rem;
+  margin: 0;
+}
+
+body.single-dlp_document .main-post-content {
+  padding: 1.5rem 2rem;
+  margin-top: 2rem;
+}
+
+body.single-dlp_document .entry-header {
+  margin-bottom: 1.5rem;
+}
+
+body.single-dlp_document .entry-title {
+  font-size: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding-bottom: 0.5rem;
+}
+
+body.single-dlp_document .entry-content {
+  margin: 0.5rem 0;
+}
+
+/* PDF Embedder styling */
+body.single-dlp_document .pdfemb-viewer {
+  margin: 1rem auto;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Fallback message styling */
+body.single-dlp_document .pdf-fallback-message {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+body.single-dlp_document .pdf-fallback-message .download-button {
+  display: inline-block;
+  background-color: #a3473b;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+body.single-dlp_document .pdf-fallback-message .download-button:hover {
+  background-color: #902f29;
+}
+
+/* Sidebar styling */
+body.single-dlp_document .sticky-sidebar {
+    background-color: white;
+  margin-top: 1rem;
+}
+
+body.single-dlp_document .sticky-sidebar-item {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+body.single-dlp_document .sticky-sidebar-item h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #333;
+  text-align: center;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding-bottom: 0.5rem;
+}
+
+body.single-dlp_document .dlp-document-meta p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+body.single-dlp_document .dlp-document-meta strong {
+  color: #555;
+  font-weight: 600;
+}
+
+/* Download button styling */
+body.single-dlp_document .dlp-download-button {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background-color: #a3473b;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+body.single-dlp_document .dlp-download-button:hover {
+  background-color: #902f29;
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  body.single-dlp_document .main-post-content-wrapper {
+    flex-direction: column;
+  }
+  
+  body.single-dlp_document .main-post-content,
+  body.single-dlp_document .sticky-sidebar {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+  
+  body.single-dlp_document .sticky-sidebar {
+    position: static;
+    top: auto;
+    margin-top: 1.5rem;
+  }
+  
+  body.single-dlp_document .entry-title {
+    font-size: 1.75rem;
+  }
+}  

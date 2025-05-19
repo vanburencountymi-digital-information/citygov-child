@@ -1,0 +1,78 @@
+/* Accordion Styles for Page List */
+.page-list-ext-item.has-children {
+    margin-bottom: 10px;
+}
+
+.page-title-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.page-list-ext-item.has-children .page-title-wrapper h3 {
+    margin: 0;
+    flex: 1;
+}
+
+.dropdown-indicator {
+    width: 20px;
+    height: 20px;
+    position: relative;
+}
+
+.dropdown-indicator:before,
+.dropdown-indicator:after {
+    content: '';
+    position: absolute;
+    background-color: #333;
+    transition: transform 0.3s ease;
+}
+
+.dropdown-indicator:before {
+    width: 2px;
+    height: 12px;
+    top: 4px;
+    left: 9px;
+}
+
+.dropdown-indicator:after {
+    width: 12px;
+    height: 2px;
+    top: 9px;
+    left: 4px;
+}
+
+.page-list-ext-item.expanded .dropdown-indicator:before {
+    transform: rotate(90deg);
+}
+
+.subpages-accordion {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    margin-left: 20px;
+    border-left: 1px solid #ddd;
+}
+
+.page-list-ext-item.expanded .subpages-accordion {
+    max-height: 1000px; /* A large value to ensure content fits */
+}
+
+.subpage-item {
+    padding: 10px 0 10px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.subpage-item:last-child {
+    border-bottom: none;
+}
+
+.subpage-title {
+    margin: 0 0 5px 0;
+    font-size: 1em;
+}
+
+.subpage-content {
+    font-size: 0.9em;
+} 
