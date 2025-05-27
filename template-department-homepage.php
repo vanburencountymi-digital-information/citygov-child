@@ -71,10 +71,10 @@ Template Post Type: post, page, event
                     // if (!empty($department_id)) {
                     //     echo do_shortcode('[department_details department="' . esc_attr($department_id) . '" show="name,address,phone,fax"]');
                     // }
-                    if (!empty($department_name)) {
-                        echo '<h2>' . esc_html($department_name) . ' Documents </h2>';
-                        echo do_shortcode('[doc_library doc_tag="' . esc_attr($department_name) . '"]');
-                    }
+                    // if (!empty($department_name)) {
+                    //     echo '<h2>' . esc_html($department_name) . ' Documents </h2>';
+                    //     echo do_shortcode('[doc_library doc_category="' . esc_attr($department_name) . '"]');
+                    // }
                     // Display staff directory
                     if (!empty($department_id)) {
                         echo '<h2>Department Staff</h2>';
