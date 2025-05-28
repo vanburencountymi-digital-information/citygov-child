@@ -594,7 +594,7 @@ function my_custom_subpages_shortcode($atts) {
     
     $return .= $pagelist_unq_settings['powered_by'];
     if ($list_pages_html) {
-        $return .= '<ul class="page-list subpages-page-list ' . esc_attr($atts['class']) . '">' . "\n" . $list_pages_html . "\n" . '</ul>';
+        $return .= '<h2> Subpages </h2>' . '<ul class="page-list subpages-page-list ' . esc_attr($atts['class']) . '">' . "\n" . $list_pages_html . "\n" . '</ul>';
     } else {
         $return .= '<!-- no pages to show -->';
     }
