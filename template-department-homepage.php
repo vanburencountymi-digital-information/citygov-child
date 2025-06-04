@@ -75,13 +75,75 @@ Template Post Type: post, page, event
                     //     echo '<h2>' . esc_html($department_name) . ' Documents </h2>';
                     //     echo do_shortcode('[doc_library doc_category="' . esc_attr($department_name) . '"]');
                     // }
-                    // Display staff directory
+                    
+                    // Display staff directory for multiple departments with department-specific headings
                     if (!empty($department_id)) {
-                        echo '<h2>Department Staff</h2>';
-                        echo do_shortcode('[staff_directory department="' . esc_attr($department_id) . '" show="name,title,email,phone,photo"]');
+                        // Split comma-separated department IDs and clean them up
+                        $department_ids = array_map('trim', explode(',', $department_id));
+                        
+                        // Remove any empty values
+                        $department_ids = array_filter($department_ids);
+                        
+                        if (!empty($department_ids)) {
+                            // If we have the Airtable Directory plugin, use it to get department names
+                            if (class_exists('Airtable_Directory_API')) {
+                                // Get the API instance - check if it's available globally or create one
+                                global $airtable_directory_api;
+                                
+                                // If global instance doesn't exist, create one
+                                if (!$airtable_directory_api) {
+                                    $airtable_directory_api = new Airtable_Directory_API();
+                                }
+                                
+                                foreach ($department_ids as $dept_id) {
+                                    // Use the built-in method to get department by ID (uses caching)
+                                    $department_name_from_api = '';
+                                    
+                                    try {
+                                        // Try to get department using the field ID method first
+                                        $department_query_params = array(
+                                            'filterByFormula' => "{fldwAR2a55bspWLPt} = '$dept_id'",
+                                            'maxRecords' => 1
+                                        );
+                                        
+                                        $departments = $airtable_directory_api->fetch_data(AIRTABLE_DEPARTMENT_TABLE, $department_query_params);
+                                        
+                                        if ($departments && isset($departments[0]['fields']['Department Name'])) {
+                                            $department_name_from_api = $departments[0]['fields']['Department Name'];
+                                        } else {
+                                            // Fallback: try using the numeric ID method if the field ID doesn't work
+                                            $department_record = $airtable_directory_api->get_department_by_id($dept_id);
+                                            if ($department_record && isset($department_record['fields']['Department Name'])) {
+                                                $department_name_from_api = $department_record['fields']['Department Name'];
+                                            }
+                                        }
+                                    } catch (Exception $e) {
+                                        error_log('Error fetching department name for ID ' . $dept_id . ': ' . $e->getMessage());
+                                    }
+                                    
+                                    // Use the department name from API if available, otherwise use a generic heading
+                                    $section_heading = !empty($department_name_from_api) ? 
+                                        esc_html($department_name_from_api) . ' Staff' : 
+                                        'Department Staff (ID: ' . esc_html($dept_id) . ')';
+                                    
+                                    echo '<h2>' . $section_heading . '</h2>';
+                                    echo do_shortcode('[staff_directory department="' . esc_attr($dept_id) . '" show="name,title,email,phone,photo"]');
+                                }
+                            } else {
+                                // Fallback if Airtable Directory plugin is not available
+                                if (count($department_ids) === 1) {
+                                    echo '<h2>Department Staff</h2>';
+                                    echo do_shortcode('[staff_directory department="' . esc_attr($department_ids[0]) . '" show="name,title,email,phone,photo"]');
+                                } else {
+                                    foreach ($department_ids as $dept_id) {
+                                        echo '<h2>Department Staff (ID: ' . esc_html($dept_id) . ')</h2>';
+                                        echo do_shortcode('[staff_directory department="' . esc_attr($dept_id) . '" show="name,title,email,phone,photo"]');
+                                    }
+                                }
+                            }
+                        }
                     }
                     ?>
-
 
                 </div><!-- end .entry -->
                 

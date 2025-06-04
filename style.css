@@ -1368,6 +1368,30 @@ text-decoration: none;
 /* 8.1 Single Document Page
    ========================================================================== */
 
+.download-button,
+.view-button {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.download-button {
+    background-color: #0073aa;
+    color: white;
+}
+
+.view-button {
+    background-color: #f1f1f1;
+    color: #333;
+}
+
+.download-button:hover,
+.view-button:hover {
+    opacity: 0.9;
+}
+
 body.single-dlp_document .content-area {
   background-color: white;
   padding-top: 1rem;

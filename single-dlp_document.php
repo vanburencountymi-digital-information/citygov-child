@@ -36,6 +36,7 @@ while ( have_posts() ) :
                 $file_type = strtolower( $document->get_file_type() );
                 $can_embed = $pdf_url && $file_type === 'pdf' && shortcode_exists( 'pdf-embedder' );
                 $fallback_image = get_theme_file_uri('/assets/images/pdf-fallback.png'); // Change path if needed
+                $is_image = in_array( $file_type, ['jpg', 'jpeg', 'png', 'gif', 'webp'] );
                 ?>
 
                 <div id="pdf-container" class="pdf-embed-wrapper">
@@ -51,13 +52,27 @@ while ( have_posts() ) :
                         <noscript>
                         <div class="pdf-fallback">
                             <img src="<?php echo esc_url( $fallback_image ); ?>" alt="PDF preview not available" />
-                            <p><a href="<?php echo esc_url( $pdf_url ); ?>" download class="download-button">Download the PDF</a></p>
+                            <p>
+                                <a href="<?php echo esc_url( $pdf_url ); ?>" download class="download-button">Download the PDF</a>
+                                <a href="<?php echo esc_url( $pdf_url ); ?>" target="_blank" class="view-button">View in Browser</a>
+                            </p>
                         </div>
                         </noscript>
+                    <?php elseif ( $is_image ) : ?>
+                        <div class="image-preview">
+                            <img src="<?php echo esc_url( $pdf_url ); ?>" alt="<?php echo esc_attr( get_the_title() ); ?>" />
+                            <p>
+                                <a href="<?php echo esc_url( $pdf_url ); ?>" download class="download-button">Download the Image</a>
+                                <a href="<?php echo esc_url( $pdf_url ); ?>" target="_blank" class="view-button">View in Browser</a>
+                            </p>
+                        </div>
                     <?php else : ?>
                         <div class="pdf-fallback">
-                        <img src="<?php echo esc_url( $fallback_image ); ?>" alt="PDF preview not available" />
-                        <p><a href="<?php echo esc_url( $pdf_url ); ?>" download class="download-button">Download the PDF</a></p>
+                        <img src="<?php echo esc_url( $fallback_image ); ?>" alt="Document preview not available" />
+                        <p>
+                            <a href="<?php echo esc_url( $pdf_url ); ?>" download class="download-button">Download the Document</a>
+                            <a href="<?php echo esc_url( $pdf_url ); ?>" target="_blank" class="view-button">View in Browser</a>
+                        </p>
                         </div>
                     <?php endif; ?>
                 </div>
