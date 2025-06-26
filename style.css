@@ -1531,4 +1531,10 @@ body.single-dlp_document .dlp-download-button:hover {
   body.single-dlp_document .entry-title {
     font-size: 1.75rem;
   }
+}
+
+@media (max-width: 768px) {
+  #sidebar {
+    display: none !important;
+  }
 }  
