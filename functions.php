@@ -129,6 +129,7 @@ function modify_shortcode_atts($atts) {
 add_filter('shortcode_atts_tribe_events_list', 'modify_shortcode_atts', 10, 1);
 add_filter('shortcode_atts_tribe_events', 'modify_shortcode_atts', 10, 1);
 add_filter('shortcode_atts_department_details', 'modify_shortcode_atts', 10, 1);
+add_filter('shortcode_atts_staff_directory', 'modify_shortcode_atts', 10, 1);
 
 // Tell document library pro to stop overriding the content of the single document page
 add_filter( 'document_library_pro_enable_single_content_customization', '__return_false' );

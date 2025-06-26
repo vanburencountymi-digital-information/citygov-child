@@ -121,13 +121,6 @@ Template Post Type: post, page, event
                                         error_log('Error fetching department name for ID ' . $dept_id . ': ' . $e->getMessage());
                                     }
                                     
-                                    // Use the department name from API if available, otherwise use a generic heading
-                                    $section_heading = !empty($department_name_from_api) ? 
-                                        esc_html($department_name_from_api) . ' Staff' : 
-                                        'Department Staff (ID: ' . esc_html($dept_id) . ')';
-                                    
-                                    echo '<h2>' . $section_heading . '</h2>';
-                                    echo do_shortcode('[staff_directory department="' . esc_attr($dept_id) . '" show="name,title,email,phone,photo"]');
                                 }
                             } else {
                                 // Fallback if Airtable Directory plugin is not available
