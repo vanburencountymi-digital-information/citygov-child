@@ -1617,6 +1617,113 @@ body.single-dlp_document .dlp-download-button:hover {
     }
 }
 
+/* Accordion styles for sidebar and popup contexts */
+.department-menu-section .page-list-ext-item.has-children .page-title-wrapper {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.department-menu-section .dropdown-indicator {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.department-menu-section .dropdown-indicator:before,
+.department-menu-section .dropdown-indicator:after {
+    content: '';
+    position: absolute;
+    background-color: #333;
+    transition: all 0.3s ease;
+}
+
+.department-menu-section .dropdown-indicator:before {
+    /* Vertical line of the + */
+    width: 2px;
+    height: 12px;
+    top: 4px;
+    left: 9px;
+}
+
+.department-menu-section .dropdown-indicator:after {
+    /* Horizontal line of the + */
+    width: 12px;
+    height: 2px;
+    top: 9px;
+    left: 4px;
+}
+
+/* When expanded, hide the vertical line to show only - */
+.department-menu-section .page-list-ext-item.expanded .dropdown-indicator:before {
+    opacity: 0;
+}
+
+.department-menu-section .subpages-accordion {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    padding-left: 20px;
+}
+
+.department-menu-section .page-list-ext-item.expanded .subpages-accordion {
+    max-height: 1000px;
+}
+
+/* Ensure accordion styles work in popup context */
+.popup-body .page-list-ext-item.has-children .page-title-wrapper {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-body .dropdown-indicator {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.popup-body .dropdown-indicator:before,
+.popup-body .dropdown-indicator:after {
+    content: '';
+    position: absolute;
+    background-color: #333;
+    transition: all 0.3s ease;
+}
+
+.popup-body .dropdown-indicator:before {
+    width: 2px;
+    height: 12px;
+    top: 4px;
+    left: 9px;
+}
+
+.popup-body .dropdown-indicator:after {
+    width: 12px;
+    height: 2px;
+    top: 9px;
+    left: 4px;
+}
+
+.popup-body .page-list-ext-item.expanded .dropdown-indicator:before {
+    opacity: 0;
+}
+
+.popup-body .subpages-accordion {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    padding-left: 15px;
+}
+
+.popup-body .page-list-ext-item.expanded .subpages-accordion {
+    max-height: 1000px;
+}
+
 /* ==========================================================================
    10. Mobile Footer Menu and Popup Styling
    ========================================================================== */

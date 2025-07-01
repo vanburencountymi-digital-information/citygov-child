@@ -285,148 +285,146 @@ function my_custom_pagelist_ext_shortcode($atts) {
             if ( !empty( $offset ) && is_numeric( $offset ) && $offset_count <= $offset ) {
                 $count = 0; // number counter to zero if offset is not finished
             }
-            if ( ( !empty( $offset ) && is_numeric( $offset ) && $offset_count > $offset ) || ( empty( $offset ) ) || ( !empty( $offset ) && !is_numeric( $offset ) ) ) {
-                if ( ( !empty( $number ) && is_numeric( $number ) && $count <= $number ) || ( empty( $number ) ) || ( !empty( $number ) && !is_numeric( $number ) ) ) {
-                    $link = get_permalink( $page->ID );
-                    $has_children = count(get_pages(array('parent' => $page->ID))) > 0;
-                    $page_class = $has_children && $accordion_subpages ? 'page-list-ext-item has-children' : 'page-list-ext-item';
-                    
-                    $list_pages_html .= '<div class="' . $page_class . '">';
-                    if ( $show_image == 1 ) {
-                        if ( get_the_post_thumbnail( $page->ID ) ) { // if there is a featured image
-                            $list_pages_html .= '<div class="page-list-ext-image"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">';
-                            //$list_pages_html .= get_the_post_thumbnail($page->ID, array($image_width,$image_height)); // doesn't work good with image size
+            if ( ( !empty( $number ) && is_numeric( $number ) && $count <= $number ) || ( empty( $number ) ) || ( !empty( $number ) && !is_numeric( $number ) ) ) {
+                $link = get_permalink( $page->ID );
+                $has_children = count(get_pages(array('parent' => $page->ID))) > 0;
+                $page_class = $has_children && $accordion_subpages ? 'page-list-ext-item has-children' : 'page-list-ext-item';
+                
+                $list_pages_html .= '<div class="' . $page_class . '">';
+                if ( $show_image == 1 ) {
+                    if ( get_the_post_thumbnail( $page->ID ) ) { // if there is a featured image
+                        $list_pages_html .= '<div class="page-list-ext-image"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">';
+                        //$list_pages_html .= get_the_post_thumbnail($page->ID, array($image_width,$image_height)); // doesn't work good with image size
 
-                            $image = wp_get_attachment_image_src( get_post_thumbnail_id( $page->ID ), array($image_width,$image_height) ); // get featured img; 'large'
-                            $img_url = $image[0]; // get the src of the featured image
-                            $list_pages_html .= '<img src="'.$img_url.'" width="'.esc_attr($image_width).'" alt="'.esc_attr($page->post_title).'" />'; // not using height="'.$image_height.'" because images could be not square shaped and they will be stretched
+                        $image = wp_get_attachment_image_src( get_post_thumbnail_id( $page->ID ), array($image_width,$image_height) ); // get featured img; 'large'
+                        $img_url = $image[0]; // get the src of the featured image
+                        $list_pages_html .= '<img src="'.$img_url.'" width="'.esc_attr($image_width).'" alt="'.esc_attr($page->post_title).'" />'; // not using height="'.$image_height.'" because images could be not square shaped and they will be stretched
 
-                            $list_pages_html .= '</a></div> ';
-                        } else {
-                            if ( $show_first_image == 1 ) {
-                                $img_scr = pagelist_unqprfx_get_first_image( $page->post_content );
-                                if ( !empty( $img_scr ) ) {
-                                    $list_pages_html .= '<div class="page-list-ext-image"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">';
-                                    $list_pages_html .= '<img src="'.$img_scr.'" width="'.esc_attr($image_width).'" alt="'.esc_attr($page->post_title).'" />'; // not using height="'.$image_height.'" because images could be not square shaped and they will be stretched
-                                    $list_pages_html .= '</a></div> ';
-                                }
+                        $list_pages_html .= '</a></div> ';
+                    } else {
+                        if ( $show_first_image == 1 ) {
+                            $img_scr = pagelist_unqprfx_get_first_image( $page->post_content );
+                            if ( !empty( $img_scr ) ) {
+                                $list_pages_html .= '<div class="page-list-ext-image"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">';
+                                $list_pages_html .= '<img src="'.$img_scr.'" width="'.esc_attr($image_width).'" alt="'.esc_attr($page->post_title).'" />'; // not using height="'.$image_height.'" because images could be not square shaped and they will be stretched
+                                $list_pages_html .= '</a></div> ';
                             }
                         }
                     }
-
-
-                    if ( $show_title == 1 ) {
-                        if ($has_children && $accordion_subpages) {
-                            $list_pages_html .= '<div class="page-title-wrapper">';
-                            $list_pages_html .= '<h3 class="page-list-ext-title"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">'.$page->post_title.'</a></h3>';
-                            $list_pages_html .= '<span class="dropdown-indicator" aria-hidden="true"></span>';
-                            $list_pages_html .= '</div>';
-                        } else {
-                            $list_pages_html .= '<h3 class="page-list-ext-title"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">'.$page->post_title.'</a></h3>';
-                        }
-                    }
-                    if ( $show_content == 1 ) {
-                        //$content = apply_filters('the_content', $page->post_content);
-                        //$content = str_replace(']]>', ']]&gt;', $content); // both used in default the_content() function
-
-                        if ( !empty( $page->post_excerpt ) ) {
-                            $text_content = $page->post_excerpt;
-                        } else {
-                            $text_content = $page->post_content;
-                        }
-
-                        if ( post_password_required($page) ) {
-                            $content = '<!-- password protected -->';
-                        } else {
-                            $content = pagelist_unqprfx_parse_content( $text_content, $limit_content, $strip_tags, $strip_shortcodes, $more_tag );
-                            $content = do_shortcode( $content );
-
-                            if ( $show_title == 0 ) { // make content as a link if there is no title
-                                $content = '<a href="'.$link.'">'.$content.'</a>';
-                            }
-                        }
-
-                        $list_pages_html .= '<div class="page-list-ext-item-content">'.$content.'</div>';
-
-                    }
-                    if ( $show_child_count == 1 ) {
-                        $count_subpages = count(get_pages("child_of=".$page->ID));
-                        if ( $count_subpages > 0 ) { // hide empty
-                            $child_count_pos = strpos($child_count_template, '%child_count%'); // check if we have %child_count% marker in template
-                            if ($child_count_pos === false) { // %child_count% not found in template
-                                $child_count_template_html = $child_count_template.' '.$count_subpages;
-                                $list_pages_html .= '<div class="page-list-ext-child-count">'.$child_count_template_html.'</div>';
-                            } else { // %child_count% found in template
-                                $child_count_template_html = str_replace('%child_count%', $count_subpages, $child_count_template);
-                                $list_pages_html .= '<div class="page-list-ext-child-count">'.$child_count_template_html.'</div>';
-                            }
-                        }
-                    }
-                    if ( $show_meta_key != '' ) {
-                        $post_meta = do_shortcode(get_post_meta($page->ID, $show_meta_key, true));
-                        if ( !empty($post_meta) ) { // hide empty
-                            $meta_pos = strpos($meta_template, '%meta%'); // check if we have %meta% marker in template
-                            if ($meta_pos === false) { // %meta% not found in template
-                                $meta_template_html = $meta_template.' '.$post_meta;
-                                $list_pages_html .= '<div class="page-list-ext-meta">'.$meta_template_html.'</div>';
-                            } else { // %meta% found in template
-                                $meta_template_html = str_replace('%meta%', $post_meta, $meta_template);
-                                $list_pages_html .= '<div class="page-list-ext-meta">'.$meta_template_html.'</div>';
-                            }
-                        }
-                    }
-                    
-                    // Add accordion for subpages if this page has children
-                    if ($has_children && $accordion_subpages) {
-                        // Get subpages of this page
-                        $subpages_args = array(
-                            'parent' => $page->ID,
-                            'sort_order' => $sort_order,
-                            'sort_column' => $sort_column,
-                            'hierarchical' => 0,
-                            'exclude' => pagelist_unqprfx_norm_params($exclude),
-                            'include' => pagelist_unqprfx_norm_params($include),
-                            'meta_key' => $meta_key,
-                            'meta_value' => $meta_value,
-                            'authors' => $authors,
-                            'post_type' => $post_type,
-                            'post_status' => $post_status
-                        );
-                        
-                        $subpages = get_pages($subpages_args);
-                        
-                        if (!empty($subpages)) {
-                            $list_pages_html .= '<div class="subpages-accordion">';
-                            
-                            foreach ($subpages as $subpage) {
-                                $subpage_link = get_permalink($subpage->ID);
-                                $list_pages_html .= '<div class="subpage-item">';
-                                $list_pages_html .= '<h4 class="subpage-title"><a href="'.$subpage_link.'" title="'.esc_attr($subpage->post_title).'">'.$subpage->post_title.'</a></h4>';
-                                
-                                // Optionally show excerpt for subpages
-                                if ($show_content == 1) {
-                                    if (!empty($subpage->post_excerpt)) {
-                                        $text_content = $subpage->post_excerpt;
-                                    } else {
-                                        $text_content = $subpage->post_content;
-                                    }
-                                    
-                                    if (!post_password_required($subpage)) {
-                                        $content = pagelist_unqprfx_parse_content($text_content, $limit_content, $strip_tags, $strip_shortcodes, $more_tag);
-                                        $content = do_shortcode($content);
-                                        $list_pages_html .= '<div class="subpage-content">'.$content.'</div>';
-                                    }
-                                }
-                                
-                                $list_pages_html .= '</div>';
-                            }
-                            
-                            $list_pages_html .= '</div>'; // End .subpages-accordion
-                        }
-                    }
-                    
-                    $list_pages_html .= '</div>'."\n";
                 }
+
+
+                if ( $show_title == 1 ) {
+                    if ($has_children && $accordion_subpages) {
+                        $list_pages_html .= '<div class="page-title-wrapper">';
+                        $list_pages_html .= '<h3 class="page-list-ext-title"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">'.$page->post_title.'</a></h3>';
+                        $list_pages_html .= '<span class="dropdown-indicator" aria-hidden="true"></span>';
+                        $list_pages_html .= '</div>';
+                    } else {
+                        $list_pages_html .= '<h3 class="page-list-ext-title"><a href="'.$link.'" title="'.esc_attr($page->post_title).'">'.$page->post_title.'</a></h3>';
+                    }
+                }
+                if ( $show_content == 1 ) {
+                    //$content = apply_filters('the_content', $page->post_content);
+                    //$content = str_replace(']]>', ']]&gt;', $content); // both used in default the_content() function
+
+                    if ( !empty( $page->post_excerpt ) ) {
+                        $text_content = $page->post_excerpt;
+                    } else {
+                        $text_content = $page->post_content;
+                    }
+
+                    if ( post_password_required($page) ) {
+                        $content = '<!-- password protected -->';
+                    } else {
+                        $content = pagelist_unqprfx_parse_content( $text_content, $limit_content, $strip_tags, $strip_shortcodes, $more_tag );
+                        $content = do_shortcode( $content );
+
+                        if ( $show_title == 0 ) { // make content as a link if there is no title
+                            $content = '<a href="'.$link.'">'.$content.'</a>';
+                        }
+                    }
+
+                    $list_pages_html .= '<div class="page-list-ext-item-content">'.$content.'</div>';
+
+                }
+                if ( $show_child_count == 1 ) {
+                    $count_subpages = count(get_pages("child_of=".$page->ID));
+                    if ( $count_subpages > 0 ) { // hide empty
+                        $child_count_pos = strpos($child_count_template, '%child_count%'); // check if we have %child_count% marker in template
+                        if ($child_count_pos === false) { // %child_count% not found in template
+                            $child_count_template_html = $child_count_template.' '.$count_subpages;
+                            $list_pages_html .= '<div class="page-list-ext-child-count">'.$child_count_template_html.'</div>';
+                        } else { // %child_count% found in template
+                            $child_count_template_html = str_replace('%child_count%', $count_subpages, $child_count_template);
+                            $list_pages_html .= '<div class="page-list-ext-child-count">'.$child_count_template_html.'</div>';
+                        }
+                    }
+                }
+                if ( $show_meta_key != '' ) {
+                    $post_meta = do_shortcode(get_post_meta($page->ID, $show_meta_key, true));
+                    if ( !empty($post_meta) ) { // hide empty
+                        $meta_pos = strpos($meta_template, '%meta%'); // check if we have %meta% marker in template
+                        if ($meta_pos === false) { // %meta% not found in template
+                            $meta_template_html = $meta_template.' '.$post_meta;
+                            $list_pages_html .= '<div class="page-list-ext-meta">'.$meta_template_html.'</div>';
+                        } else { // %meta% found in template
+                            $meta_template_html = str_replace('%meta%', $post_meta, $meta_template);
+                            $list_pages_html .= '<div class="page-list-ext-meta">'.$meta_template_html.'</div>';
+                        }
+                    }
+                }
+                
+                // Add accordion for subpages if this page has children
+                if ($has_children && $accordion_subpages) {
+                    // Get subpages of this page
+                    $subpages_args = array(
+                        'parent' => $page->ID,
+                        'sort_order' => $sort_order,
+                        'sort_column' => $sort_column,
+                        'hierarchical' => 0,
+                        'exclude' => pagelist_unqprfx_norm_params($exclude),
+                        'include' => pagelist_unqprfx_norm_params($include),
+                        'meta_key' => $meta_key,
+                        'meta_value' => $meta_value,
+                        'authors' => $authors,
+                        'post_type' => $post_type,
+                        'post_status' => $post_status
+                    );
+                    
+                    $subpages = get_pages($subpages_args);
+                    
+                    if (!empty($subpages)) {
+                        $list_pages_html .= '<div class="subpages-accordion">';
+                        
+                        foreach ($subpages as $subpage) {
+                            $subpage_link = get_permalink($subpage->ID);
+                            $list_pages_html .= '<div class="subpage-item">';
+                            $list_pages_html .= '<h4 class="subpage-title"><a href="'.$subpage_link.'" title="'.esc_attr($subpage->post_title).'">'.$subpage->post_title.'</a></h4>';
+                            
+                            // Optionally show excerpt for subpages
+                            if ($show_content == 1) {
+                                if (!empty($subpage->post_excerpt)) {
+                                    $text_content = $subpage->post_excerpt;
+                                } else {
+                                    $text_content = $subpage->post_content;
+                                }
+                                
+                                if (!post_password_required($subpage)) {
+                                    $content = pagelist_unqprfx_parse_content($text_content, $limit_content, $strip_tags, $strip_shortcodes, $more_tag);
+                                    $content = do_shortcode($content);
+                                    $list_pages_html .= '<div class="subpage-content">'.$content.'</div>';
+                                }
+                            }
+                            
+                            $list_pages_html .= '</div>';
+                        }
+                        
+                        $list_pages_html .= '</div>'; // End .subpages-accordion
+                    }
+                }
+                
+                $list_pages_html .= '</div>'."\n";
             }
         }
     }
@@ -435,23 +433,57 @@ function my_custom_pagelist_ext_shortcode($atts) {
     if ($accordion_subpages) {
         $accordion_js = '
         <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var accordionItems = document.querySelectorAll(".page-list-ext-item.has-children .page-title-wrapper");
+        function initializeAccordions() {
+            // Target all accordion items in any location
+            var accordionItems = document.querySelectorAll(".page-list-ext-item.has-children .page-title-wrapper, .subpages-page-list .subpage-item.has-children .page-title-wrapper");
             accordionItems.forEach(function(item) {
-                item.addEventListener("click", function(e) {
-                    // Prevent navigation if clicking on the dropdown indicator or title itself
-                    if (e.target.tagName !== "A") {
-                        e.preventDefault();
-                        var parent = this.closest(".page-list-ext-item");
-                        parent.classList.toggle("expanded");
-                        var accordion = parent.querySelector(".subpages-accordion");
-                        if (parent.classList.contains("expanded")) {
-                            accordion.style.maxHeight = accordion.scrollHeight + "px";
-                        } else {
-                            accordion.style.maxHeight = "0";
-                        }
+                // Remove existing listeners to prevent duplicates
+                item.removeEventListener("click", handleAccordionClick);
+                item.addEventListener("click", handleAccordionClick);
+            });
+        }
+        
+        function handleAccordionClick(e) {
+            // Prevent navigation if clicking on the dropdown indicator or title wrapper
+            if (e.target.tagName !== "A") {
+                e.preventDefault();
+                var parent = this.closest(".page-list-ext-item, .subpage-item");
+                parent.classList.toggle("expanded");
+                var accordion = parent.querySelector(".subpages-accordion");
+                if (parent.classList.contains("expanded")) {
+                    accordion.style.maxHeight = accordion.scrollHeight + "px";
+                } else {
+                    accordion.style.maxHeight = "0";
+                }
+            }
+        }
+        
+        // Initialize on DOM ready
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initializeAccordions);
+        } else {
+            initializeAccordions();
+        }
+        
+        // Also initialize when content is dynamically loaded (for popups)
+        document.addEventListener("DOMContentLoaded", function() {
+            // Use MutationObserver to watch for new content
+            var observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                        // Check if any new nodes contain accordion elements
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1 && (node.querySelector(".page-list-ext-item.has-children") || node.querySelector(".subpage-item.has-children"))) {
+                                initializeAccordions();
+                            }
+                        });
                     }
                 });
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
             });
         });
         </script>';
@@ -569,23 +601,57 @@ function my_custom_subpages_shortcode($atts) {
     if ($atts['accordion_subpages']) {
         $accordion_js = '
         <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var accordionItems = document.querySelectorAll(".subpages-page-list .subpage-item.has-children .page-title-wrapper");
+        function initializeAccordions() {
+            // Target all accordion items in any location
+            var accordionItems = document.querySelectorAll(".page-list-ext-item.has-children .page-title-wrapper, .subpages-page-list .subpage-item.has-children .page-title-wrapper");
             accordionItems.forEach(function(item) {
-                item.addEventListener("click", function(e) {
-                    // Prevent navigation if clicking on the dropdown indicator or title wrapper
-                    if (e.target.tagName !== "A") {
-                        e.preventDefault();
-                        var parent = this.closest(".subpage-item");
-                        parent.classList.toggle("expanded");
-                        var accordion = parent.querySelector(".subpages-accordion");
-                        if (parent.classList.contains("expanded")) {
-                            accordion.style.maxHeight = accordion.scrollHeight + "px";
-                        } else {
-                            accordion.style.maxHeight = "0";
-                        }
+                // Remove existing listeners to prevent duplicates
+                item.removeEventListener("click", handleAccordionClick);
+                item.addEventListener("click", handleAccordionClick);
+            });
+        }
+        
+        function handleAccordionClick(e) {
+            // Prevent navigation if clicking on the dropdown indicator or title wrapper
+            if (e.target.tagName !== "A") {
+                e.preventDefault();
+                var parent = this.closest(".page-list-ext-item, .subpage-item");
+                parent.classList.toggle("expanded");
+                var accordion = parent.querySelector(".subpages-accordion");
+                if (parent.classList.contains("expanded")) {
+                    accordion.style.maxHeight = accordion.scrollHeight + "px";
+                } else {
+                    accordion.style.maxHeight = "0";
+                }
+            }
+        }
+        
+        // Initialize on DOM ready
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initializeAccordions);
+        } else {
+            initializeAccordions();
+        }
+        
+        // Also initialize when content is dynamically loaded (for popups)
+        document.addEventListener("DOMContentLoaded", function() {
+            // Use MutationObserver to watch for new content
+            var observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                        // Check if any new nodes contain accordion elements
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1 && (node.querySelector(".page-list-ext-item.has-children") || node.querySelector(".subpage-item.has-children"))) {
+                                initializeAccordions();
+                            }
+                        });
                     }
                 });
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
             });
         });
         </script>';
