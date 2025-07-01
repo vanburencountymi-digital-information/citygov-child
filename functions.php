@@ -11,9 +11,9 @@ add_action('wp_enqueue_scripts', 'citygov_child_enqueue_styles');
 function my_theme_widgets_init() {
     // Department Homepage Sidebar
     register_sidebar( array(
-        'name'          => __( 'Department Homepage Sidebar', 'theme_text_domain' ),
+        'name'          => 'Department Homepage Sidebar',
         'id'            => 'department-homepage',
-        'description'   => __( 'Widgets in this area will be shown on the department homepage template.', 'theme_text_domain' ),
+        'description'   => 'Widgets in this area will be shown on the department homepage template.',
         'before_widget' => '<div id="%1$s" class="sidebar_item">',
         'after_widget'  => '</div>',
         'before_title'  => '<h2 class="widgettitle">',
@@ -21,9 +21,9 @@ function my_theme_widgets_init() {
     ) );
     // Department Blog Single Post Sticky Sidebar
     register_sidebar( array(
-        'name'          => __( 'Department Blog Single Post Sticky Sidebar', 'theme_text_domain' ),
+        'name'          => 'Department Blog Single Post Sticky Sidebar',
         'id'            => 'department-blog-single-post-sticky-sidebar',
-        'description'   => __( 'Widgets in this area will appear in the sticky sidebar for single posts.', 'theme_text_domain' ),
+        'description'   => 'Widgets in this area will appear in the sticky sidebar for single posts.',
         'before_widget' => '<div id="%1$s" class="sidebar_item">',
         'after_widget'  => '</div>',
         'before_title'  => '<h2 class="widgettitle">',
@@ -681,3 +681,5 @@ function add_subpages_accordion_styles() {
     wp_add_inline_style('pagelist-accordion-styles', $css);
 }
 add_action('wp_enqueue_scripts', 'add_subpages_accordion_styles', 12); // Higher priority number to load after main styles
+
+

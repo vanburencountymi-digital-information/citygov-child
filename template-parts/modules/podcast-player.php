@@ -1,10 +1,10 @@
 <?php
 /**
- * Partial: Podcast Player
+ * Module: Podcast Player
  *
  * Supports:
- *  - WP ≥ 5.5 args API:  get_template_part( 'partials/podcast-player', null, [ 'audio_src'=> $url, … ] );
- *  - Older WP:          set_query_var( 'audio_src', $url ); get_template_part( 'partials/podcast-player' );
+ *  - WP ≥ 5.5 args API:  get_template_part( 'template-parts/modules/podcast-player', null, [ 'audio_src'=> $url, … ] );
+ *  - Older WP:          set_query_var( 'audio_src', $url ); get_template_part( 'template-parts/modules/podcast-player' );
  */
 
 // normalize args and apply fallbacks

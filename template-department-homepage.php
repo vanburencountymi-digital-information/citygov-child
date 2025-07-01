@@ -60,9 +60,14 @@ Template Post Type: post, page, event
                 <div class="clearfix"></div>
                 
                 <div class="entry">
-                    
-                    <?php the_content();  ?>
                     <?php
+                    if ( class_exists('\Elementor\Plugin') ) {
+                        // Show Elementor template first
+                        echo do_shortcode('[elementor-template id="24651"]');
+                    }
+                    // Always show the page content and department logic
+                    the_content();
+
                     // Retrieve the custom field 'department_id' for the current page
                     $department_id = get_post_meta(get_the_ID(), 'department_id', true);
                     $department_name = get_post_meta(get_the_ID(), 'department_name', true);
@@ -137,7 +142,6 @@ Template Post Type: post, page, event
                         }
                     }
                     ?>
-
                 </div><!-- end .entry -->
                 
                 <div class="clearfix"></div>
