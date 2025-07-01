@@ -1678,6 +1678,7 @@ body.single-dlp_document .dlp-download-button:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 8px 0;
 }
 
 .popup-body .dropdown-indicator {
@@ -1685,6 +1686,7 @@ body.single-dlp_document .dlp-download-button:hover {
     height: 20px;
     position: relative;
     flex-shrink: 0;
+    margin-left: 10px;
 }
 
 .popup-body .dropdown-indicator:before,
@@ -1718,10 +1720,66 @@ body.single-dlp_document .dlp-download-button:hover {
     overflow: hidden;
     transition: max-height 0.3s ease-out;
     padding-left: 15px;
+    margin-top: 0;
 }
 
 .popup-body .page-list-ext-item.expanded .subpages-accordion {
     max-height: 1000px;
+    margin-top: 10px;
+}
+
+/* Additional popup-specific accordion styles */
+.popup-body .page-list-ext-item {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 12px 0;
+}
+
+.popup-body .page-list-ext-item:last-child {
+    border-bottom: none;
+}
+
+.popup-body .page-list-ext-title {
+    margin: 0;
+    flex: 1;
+}
+
+.popup-body .page-list-ext-title a {
+    color: #007cba;
+    text-decoration: none;
+    font-weight: 500;
+    display: block;
+    padding: 4px 0;
+}
+
+.popup-body .page-list-ext-title a:hover {
+    color: #005a87;
+    text-decoration: underline;
+}
+
+.popup-body .subpage-item {
+    padding: 8px 0;
+    margin: 0;
+    border-bottom: 1px solid #f8f8f8;
+}
+
+.popup-body .subpage-item:last-child {
+    border-bottom: none;
+}
+
+.popup-body .subpage-title {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.popup-body .subpage-title a {
+    color: #555;
+    text-decoration: none;
+    font-weight: 400;
+}
+
+.popup-body .subpage-title a:hover {
+    color: #007cba;
+    text-decoration: underline;
 }
 
 /* ==========================================================================

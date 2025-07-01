@@ -56,23 +56,65 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Function to initialize accordions in the popup
     function initializePopupAccordions() {
+        console.log('Initializing popup accordions...'); // Debug log
         const accordionItems = popup.querySelectorAll(".page-list-ext-item.has-children .page-title-wrapper");
+        console.log('Found accordion items:', accordionItems.length); // Debug log
+        
         accordionItems.forEach(function(item) {
-            item.addEventListener("click", function(e) {
-                // Prevent navigation if clicking on the dropdown indicator or title itself
-                if (e.target.tagName !== "A") {
-                    e.preventDefault();
-                    const parent = this.closest(".page-list-ext-item");
-                    parent.classList.toggle("expanded");
-                    const accordion = parent.querySelector(".subpages-accordion");
-                    if (parent.classList.contains("expanded")) {
-                        accordion.style.maxHeight = accordion.scrollHeight + "px";
-                    } else {
-                        accordion.style.maxHeight = "0";
-                    }
-                }
-            });
+            // Remove any existing listeners to prevent duplicates
+            item.removeEventListener("click", handleAccordionClick);
+            item.addEventListener("click", handleAccordionClick);
         });
+    }
+    
+    // Separate function for accordion click handling
+    function handleAccordionClick(e) {
+        // Prevent navigation if clicking on the dropdown indicator or title itself
+        if (e.target.tagName !== "A") {
+            e.preventDefault();
+            e.stopPropagation();
+            const parent = this.closest(".page-list-ext-item");
+            parent.classList.toggle("expanded");
+            const accordion = parent.querySelector(".subpages-accordion");
+            if (parent.classList.contains("expanded")) {
+                accordion.style.maxHeight = accordion.scrollHeight + "px";
+            } else {
+                accordion.style.maxHeight = "0";
+            }
+        }
+    }
+    
+    // Alternative accordion initialization that works with any accordion structure
+    function initializeAllAccordions() {
+        // Look for any elements with has-children class and page-title-wrapper
+        const allAccordionItems = popup.querySelectorAll(".has-children .page-title-wrapper");
+        console.log('Found all accordion items:', allAccordionItems.length);
+        
+        allAccordionItems.forEach(function(item) {
+            // Remove existing listeners
+            item.removeEventListener("click", handleGenericAccordionClick);
+            item.addEventListener("click", handleGenericAccordionClick);
+        });
+    }
+    
+    // Generic accordion click handler
+    function handleGenericAccordionClick(e) {
+        if (e.target.tagName !== "A") {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const parent = this.closest(".has-children");
+            const accordion = parent.querySelector(".subpages-accordion, .accordion-content");
+            
+            if (parent && accordion) {
+                parent.classList.toggle("expanded");
+                if (parent.classList.contains("expanded")) {
+                    accordion.style.maxHeight = accordion.scrollHeight + "px";
+                } else {
+                    accordion.style.maxHeight = "0";
+                }
+            }
+        }
     }
     
     // Function to open popup
@@ -80,8 +122,12 @@ document.addEventListener("DOMContentLoaded", function() {
         popup.classList.remove('hidden');
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
         
-        // Initialize accordions after popup is visible
-        setTimeout(initializePopupAccordions, 100);
+        // Initialize accordions after popup is visible - try multiple approaches
+        setTimeout(initializePopupAccordions, 50);
+        setTimeout(initializeAllAccordions, 100);
+        setTimeout(initializePopupAccordions, 200);
+        setTimeout(initializeAllAccordions, 300);
+        setTimeout(initializePopupAccordions, 500);
     };
     
     // Function to close popup
@@ -102,5 +148,31 @@ document.addEventListener("DOMContentLoaded", function() {
             closePopup();
         }
     });
+    
+    // Also initialize accordions when popup content changes (MutationObserver)
+    const popupObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                // Check if any new nodes contain accordion elements
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && node.querySelector && 
+                        (node.querySelector(".page-list-ext-item.has-children") || 
+                         node.querySelector(".has-children"))) {
+                        setTimeout(initializePopupAccordions, 100);
+                        setTimeout(initializeAllAccordions, 150);
+                    }
+                });
+            }
+        });
+    });
+    
+    // Observe the popup body for changes
+    const popupBody = popup.querySelector('.popup-body');
+    if (popupBody) {
+        popupObserver.observe(popupBody, {
+            childList: true,
+            subtree: true
+        });
+    }
 });
 </script> 
