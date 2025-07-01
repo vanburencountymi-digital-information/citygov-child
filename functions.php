@@ -771,4 +771,335 @@ function get_department_root_name($post_id = null) {
     return null;
 }
 
+/**
+ * Generate a navigation menu for a department including all subpages and sub-subpages
+ * 
+ * This function creates a hierarchical menu structure similar to the subpages shortcode
+ * but as a WordPress navigation menu that can be used in mobile popups or other contexts.
+ * 
+ * @param int $department_root_id The ID of the department root page
+ * @param bool $force_regenerate Whether to regenerate the menu even if it exists
+ * @return int|false The menu ID on success, false on failure
+ */
+function ensure_department_menu_exists($department_root_id, $force_regenerate = false) {
+    // Get the department ID from the root page
+    $dept_id = get_post_meta($department_root_id, 'department_id', true);
+    if (!$dept_id) {
+        error_log("No department_id found for page ID: {$department_root_id}");
+        return false;
+    }
+    
+    $menu_name = "Department Menu - " . get_the_title($department_root_id);
+    $menu_slug = "department_menu_{$dept_id}";
+    
+    // Check if menu already exists
+    $existing_menu = wp_get_nav_menu_object($menu_slug);
+    
+    if ($existing_menu && !$force_regenerate) {
+        // Menu exists and we're not forcing regeneration
+        return $existing_menu->term_id;
+    }
+    
+    // If menu exists and we're forcing regeneration, delete it first
+    if ($existing_menu && $force_regenerate) {
+        wp_delete_nav_menu($existing_menu->term_id);
+    }
+    
+    // Create new menu
+    $menu_id = wp_create_nav_menu($menu_slug);
+    if (is_wp_error($menu_id)) {
+        error_log("Failed to create menu for department {$dept_id}: " . $menu_id->get_error_message());
+        return false;
+    }
+    
+    // Set menu name
+    wp_update_nav_menu_object($menu_id, array('menu-name' => $menu_name));
+    
+    // Get all direct children of the department root
+    $subpages_args = array(
+        'parent' => $department_root_id,
+        'sort_order' => 'ASC',
+        'sort_column' => 'menu_order, post_title',
+        'hierarchical' => 0,
+        'post_type' => 'page',
+        'post_status' => 'publish'
+    );
+    
+    $subpages = get_pages($subpages_args);
+    $menu_items_created = 0;
+    
+    if (!empty($subpages)) {
+        foreach ($subpages as $page) {
+            // Check if this subpage has children
+            $has_children = count(get_pages(array('parent' => $page->ID))) > 0;
+            
+            // Create the main menu item
+            $menu_item_data = array(
+                'menu-item-title' => $page->post_title,
+                'menu-item-object' => 'page',
+                'menu-item-object-id' => $page->ID,
+                'menu-item-type' => 'post_type',
+                'menu-item-status' => 'publish',
+                'menu-item-url' => get_permalink($page->ID)
+            );
+            
+            $parent_menu_item_id = wp_update_nav_menu_item($menu_id, 0, $menu_item_data);
+            
+            if ($parent_menu_item_id && !is_wp_error($parent_menu_item_id)) {
+                $menu_items_created++;
+                
+                // If this page has children, add them as sub-menu items
+                if ($has_children) {
+                    $nested_args = array(
+                        'parent' => $page->ID,
+                        'sort_order' => 'ASC',
+                        'sort_column' => 'menu_order, post_title',
+                        'post_type' => 'page',
+                        'post_status' => 'publish'
+                    );
+                    
+                    $nested_pages = get_pages($nested_args);
+                    
+                    if (!empty($nested_pages)) {
+                        foreach ($nested_pages as $subpage) {
+                            $submenu_item_data = array(
+                                'menu-item-title' => $subpage->post_title,
+                                'menu-item-object' => 'page',
+                                'menu-item-object-id' => $subpage->ID,
+                                'menu-item-type' => 'post_type',
+                                'menu-item-status' => 'publish',
+                                'menu-item-url' => get_permalink($subpage->ID),
+                                'menu-item-parent-id' => $parent_menu_item_id
+                            );
+                            
+                            $submenu_item_id = wp_update_nav_menu_item($menu_id, 0, $submenu_item_data);
+                            if ($submenu_item_id && !is_wp_error($submenu_item_id)) {
+                                $menu_items_created++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Add some common department-specific menu items
+    $additional_items = array(
+        array(
+            'title' => 'Contact Us',
+            'url' => get_permalink($department_root_id) . '#contact',
+            'type' => 'custom'
+        ),
+        array(
+            'title' => 'Staff Directory',
+            'url' => get_permalink($department_root_id) . '#staff',
+            'type' => 'custom'
+        ),
+        array(
+            'title' => 'Department Home',
+            'url' => get_permalink($department_root_id),
+            'type' => 'custom'
+        )
+    );
+    
+    foreach ($additional_items as $item) {
+        $additional_item_data = array(
+            'menu-item-title' => $item['title'],
+            'menu-item-url' => $item['url'],
+            'menu-item-type' => $item['type'],
+            'menu-item-status' => 'publish'
+        );
+        
+        $additional_item_id = wp_update_nav_menu_item($menu_id, 0, $additional_item_data);
+        if ($additional_item_id && !is_wp_error($additional_item_id)) {
+            $menu_items_created++;
+        }
+    }
+    
+    error_log("Created department menu for {$dept_id} with {$menu_items_created} items");
+    return $menu_id;
+}
+
+/**
+ * Generate menus for all departments that have department_id set
+ * 
+ * This is a bulk function to create menus for all departments at once.
+ * Useful for initial setup or when adding new departments.
+ * 
+ * @param bool $force_regenerate Whether to regenerate existing menus
+ * @return array Array of results for each department processed
+ */
+function generate_all_department_menus($force_regenerate = false) {
+    $results = array();
+    
+    // Get all pages that have department_id set
+    $args = array(
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'meta_query' => array(
+            array(
+                'key' => 'department_id',
+                'compare' => 'EXISTS'
+            )
+        ),
+        'posts_per_page' => -1
+    );
+    
+    $department_pages = get_posts($args);
+    
+    foreach ($department_pages as $page) {
+        $dept_id = get_post_meta($page->ID, 'department_id', true);
+        $menu_id = ensure_department_menu_exists($page->ID, $force_regenerate);
+        
+        $results[] = array(
+            'page_id' => $page->ID,
+            'page_title' => $page->post_title,
+            'department_id' => $dept_id,
+            'menu_id' => $menu_id,
+            'success' => $menu_id !== false
+        );
+    }
+    
+    return $results;
+}
+
+/**
+ * Get a department menu by department ID
+ * 
+ * @param string $department_id The department ID
+ * @return WP_Term|false The menu object or false if not found
+ */
+function get_department_menu($department_id) {
+    $menu_slug = "department_menu_{$department_id}";
+    return wp_get_nav_menu_object($menu_slug);
+}
+
+/**
+ * Display a department menu
+ * 
+ * @param string $department_id The department ID
+ * @param array $args Additional arguments for wp_nav_menu()
+ * @return string|false The menu HTML or false if menu not found
+ */
+function display_department_menu($department_id, $args = array()) {
+    $menu = get_department_menu($department_id);
+    if (!$menu) {
+        return false;
+    }
+    
+    $default_args = array(
+        'menu' => $menu->term_id,
+        'container' => 'nav',
+        'container_class' => 'department-menu',
+        'menu_class' => 'department-menu-list',
+        'echo' => false
+    );
+    
+    $args = wp_parse_args($args, $default_args);
+    
+    return wp_nav_menu($args);
+}
+
+/**
+ * Temporary admin page for generating department menus
+ * Remove this function after you're done testing
+ */
+function add_department_menu_generator_page() {
+    add_management_page(
+        'Generate Department Menus',
+        'Generate Dept Menus',
+        'manage_options',
+        'generate-department-menus',
+        'department_menu_generator_page'
+    );
+}
+add_action('admin_menu', 'add_department_menu_generator_page');
+
+function department_menu_generator_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die('You do not have sufficient permissions to access this page.');
+    }
+    
+    $message = '';
+    $results = array();
+    
+    if (isset($_POST['generate_menus'])) {
+        $force_regenerate = isset($_POST['force_regenerate']);
+        $results = generate_all_department_menus($force_regenerate);
+        
+        $success_count = count(array_filter($results, function($r) { return $r['success']; }));
+        $total_count = count($results);
+        
+        $message = "<div class='notice notice-success'><p>Generated {$success_count} out of {$total_count} department menus successfully!</p></div>";
+    }
+    
+    ?>
+    <div class="wrap">
+        <h1>Generate Department Menus</h1>
+        
+        <?php if ($message): ?>
+            <?php echo $message; ?>
+        <?php endif; ?>
+        
+        <div class="card">
+            <h2>Generate All Department Menus</h2>
+            <p>This will create navigation menus for all departments that have a <code>department_id</code> set.</p>
+            
+            <form method="post">
+                <p>
+                    <label>
+                        <input type="checkbox" name="force_regenerate" value="1">
+                        Force regenerate existing menus (will delete and recreate)
+                    </label>
+                </p>
+                <p>
+                    <input type="submit" name="generate_menus" class="button button-primary" value="Generate Department Menus">
+                </p>
+            </form>
+        </div>
+        
+        <?php if (!empty($results)): ?>
+            <div class="card">
+                <h2>Results</h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>Page Title</th>
+                            <th>Page ID</th>
+                            <th>Department ID</th>
+                            <th>Menu ID</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($results as $result): ?>
+                            <tr>
+                                <td><?php echo esc_html($result['page_title']); ?></td>
+                                <td><?php echo esc_html($result['page_id']); ?></td>
+                                <td><?php echo esc_html($result['department_id']); ?></td>
+                                <td><?php echo $result['menu_id'] ? esc_html($result['menu_id']) : 'Failed'; ?></td>
+                                <td>
+                                    <?php if ($result['success']): ?>
+                                        <span style="color: green;">✓ Success</span>
+                                    <?php else: ?>
+                                        <span style="color: red;">✗ Failed</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+        
+        <div class="card">
+            <h2>Manual Generation</h2>
+            <p>You can also generate a menu for a specific department by calling:</p>
+            <code>ensure_department_menu_exists($page_id);</code>
+            <p>Where <code>$page_id</code> is the ID of the department root page.</p>
+        </div>
+    </div>
+    <?php
+}
+
 
