@@ -70,6 +70,9 @@
 </div><!-- /.upper class  -->
 </div><!-- /.wrapper  -->
 <?php get_template_part('template-parts/modules/exit-modal'); ?>
+
+<!-- END TEMPORARY TESTING -->
+
 <?php wp_footer(); ?>
 </body>
 </html>

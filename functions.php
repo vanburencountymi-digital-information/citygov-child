@@ -682,4 +682,93 @@ function add_subpages_accordion_styles() {
 }
 add_action('wp_enqueue_scripts', 'add_subpages_accordion_styles', 12); // Higher priority number to load after main styles
 
+/**
+ * Get the department root ID by walking up the page hierarchy
+ * 
+ * This function starts from the current page and walks up through all ancestors
+ * to find the first page that has a department_id defined. If no department_id
+ * is found in the entire hierarchy, it returns null.
+ * 
+ * @param int $post_id Optional. The post ID to start from. Defaults to current post.
+ * @return string|null The department_id if found, null otherwise
+ */
+function get_department_root_id($post_id = null) {
+    // If no post_id provided, use current post
+    if ($post_id === null) {
+        global $post;
+        if (!$post) {
+            return null;
+        }
+        $post_id = $post->ID;
+    }
+    
+    // Start with the current page
+    $current_id = $post_id;
+    
+    // Walk up the hierarchy until we find a department_id or reach the top
+    while ($current_id > 0) {
+        // Check if current page has department_id
+        $department_id = get_post_meta($current_id, 'department_id', true);
+        if (!empty($department_id)) {
+            return $department_id;
+        }
+        
+        // Get the parent page
+        $parent_id = wp_get_post_parent_id($current_id);
+        if ($parent_id === 0) {
+            // We've reached the top of the hierarchy
+            break;
+        }
+        
+        $current_id = $parent_id;
+    }
+    
+    // No department_id found in the entire hierarchy
+    return null;
+}
+
+/**
+ * Get the department root name by walking up the page hierarchy
+ * 
+ * This function works similarly to get_department_root_id but returns
+ * the department_name instead of department_id.
+ * 
+ * @param int $post_id Optional. The post ID to start from. Defaults to current post.
+ * @return string|null The department_name if found, null otherwise
+ */
+function get_department_root_name($post_id = null) {
+    // If no post_id provided, use current post
+    if ($post_id === null) {
+        global $post;
+        if (!$post) {
+            return null;
+        }
+        $post_id = $post->ID;
+    }
+    
+    // Start with the current page
+    $current_id = $post_id;
+    
+    // Walk up the hierarchy until we find a department_name or reach the top
+    while ($current_id > 0) {
+        // Check if current page has department_name
+        $department_name = get_post_meta($current_id, 'department_name', true);
+        if (!empty($department_name)) {
+            return $department_name;
+        }
+        
+        // Get the parent page
+        $parent_id = wp_get_post_parent_id($current_id);
+        if ($parent_id === 0) {
+            // We've reached the top of the hierarchy
+            break;
+        }
+        
+        $current_id = $parent_id;
+    }
+    
+    // No department_name found in the entire hierarchy
+    return null;
+}
+
 
