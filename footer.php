@@ -71,6 +71,12 @@
 </div><!-- /.wrapper  -->
 <?php get_template_part('template-parts/modules/exit-modal'); ?>
 
+<!-- Mobile Footer Menu -->
+<?php get_template_part('template-parts/footers/mobile-footer-menu'); ?>
+
+<!-- Department Menu Mobile Popup -->
+<?php get_template_part('template-parts/modules/department-menu-popup'); ?>
+
 <!-- END TEMPORARY TESTING -->
 
 <?php wp_footer(); ?>
