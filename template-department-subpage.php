@@ -70,7 +70,7 @@ Template Post Type: post, page, event
 
         </div><!-- #content -->
 
-        <?php get_sidebar(); ?>
+        <?php get_sidebar('department-subpage'); ?>
 
     </div><!-- end #core -->
 
