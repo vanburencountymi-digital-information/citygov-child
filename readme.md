@@ -35,7 +35,19 @@ The CityGov Child Theme is a custom WordPress theme built on top of the CityGov 
   - Passes the `department_name` to the sidebar to make it accessible to widgets and shortcodes.
   - Uses a global variable `$current_department_name` to store the department name.
 
-### 4. Template
+### 4. Template Parts
+- **Directory**: `template-parts/`
+  - **Headers** (`template-parts/headers/`): Header components for different page types
+    - `department-blog-post-header.php`: Header for department blog posts
+    - `sheriff-header.php`: Header for sheriff department pages
+  - **Footers** (`template-parts/footers/`): Footer components
+    - `sheriff-footer.php`: Footer for sheriff department pages
+  - **Modules** (`template-parts/modules/`): Reusable UI components
+    - `podcast-player.php`: Audio player component for podcast episodes
+    - `exit-modal.php`: Modal dialog component
+    - Future modules: `mobile-footer-menu.php`, `department-menu-popup.php`
+
+### 5. Template
 - **File**: `template-department-homepage.php`
   - Custom page template for department homepages.
   - Displays department details and staff directory using shortcodes.

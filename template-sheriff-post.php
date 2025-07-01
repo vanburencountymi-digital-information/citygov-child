@@ -20,14 +20,14 @@ Template Post Type: post
             <div <?php post_class('item_inn p-border'); ?>>
 
                 <!-- Sheriff Header Section -->
-                <?php get_template_part('template-parts/sheriff-header'); ?>
+                <?php get_template_part('template-parts/headers/sheriff-header'); ?>
 
                 <div class="entry">
 
                     <!-- Override breadcrumbs manually -->
                     <div class="main-breadcrumbs subpage-breadcrumbs">
-                        <a href="/departments/sheriff">← Sheriff’s Office</a>
-                        <a href="/category/sheriff">All Sheriff’s News</a>
+                        <a href="/departments/sheriff">← Sheriff's Office</a>
+                        <a href="/category/sheriff">All Sheriff's News</a>
                     </div>
 
                     <h1 itemprop="headline" class="entry-title sheriff-post-title"><?php the_title(); ?></h1>
@@ -51,7 +51,7 @@ Template Post Type: post
                 ?>
 
                 <!-- Sheriff Crime Tips Footer -->
-                <?php get_template_part('template-parts/sheriff-footer'); ?>
+                <?php get_template_part('template-parts/footers/sheriff-footer'); ?>
 
             </div>
 

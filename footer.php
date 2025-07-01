@@ -69,7 +69,7 @@
 </div>
 </div><!-- /.upper class  -->
 </div><!-- /.wrapper  -->
-<?php get_template_part('partials/exit-modal'); ?>
+<?php get_template_part('template-parts/modules/exit-modal'); ?>
 <?php wp_footer(); ?>
 </body>
 </html>

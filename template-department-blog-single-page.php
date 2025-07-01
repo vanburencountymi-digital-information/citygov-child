@@ -19,12 +19,16 @@ get_header(); ?>
         $department_address = "219 East Paw Paw Street – Paw Paw, MI 49079";
         $department_phone = "(269) 657-8253";
         $department_fax = ""; // Optional
+        $department_email = ""; // Optional
+        $department_website = "https://www.digitalinformation.com"; // Optional
+        $department_hours = "Monday - Friday, 8:00 AM - 5:00 PM"; // Optional
+        $department_description = "The Digital Information Department is responsible for managing and developing digital technologies and platforms for the city."; // Optional
         $department_leadership = [
             ['name' => 'Jerry Happel', 'title' => 'Director of Digital Innovation'],
         ];
         $use_html_logo = true; // Set this to true to use the HTML logo
 
-        get_template_part('template-parts/department-blog-post-header', null, compact('department_name', 'department_slug', 'department_news_slug', 'department_logo_url', 'department_address', 'department_phone', 'department_fax', 'department_leadership', 'use_html_logo')); 
+        get_template_part('template-parts/headers/department-blog-post-header', null, compact('department_name', 'department_slug', 'department_news_slug', 'department_logo_url', 'department_address', 'department_phone', 'department_fax', 'department_email', 'department_website', 'department_hours', 'department_description')); 
       ?>
         <!-- Department Navigation -->
         <div class="department-navigation">
@@ -96,7 +100,7 @@ get_header(); ?>
             // 1) Load your podcast‐player partial if there's an audio URL
             if ( $audio_src ) {
                 get_template_part(
-                    'partials/podcast-player',
+                    'template-parts/modules/podcast-player',
                     null,
                     compact( 'audio_src', 'cover', 'title', 'host', 'episode', 'transcript')
                 );
