@@ -1942,3 +1942,110 @@ body.single-dlp_document .dlp-download-button:hover {
         max-height: 55vh;
     }
 }  
+
+/* ==========================================================================
+   11. Footer Styling
+   ========================================================================== */
+
+/* Footer Top Row - Department Contact Section */
+.footer-top-row {
+    padding: 2rem 0;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 0;
+    width: 100%;
+    display: block;
+}
+
+.footer-top-row .foocol {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    box-sizing: border-box;
+    width: 100% !important;
+    float: none !important;
+    display: block !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+}
+
+.footer-top-row .footer-logo {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.footer-top-row .footer-logo img {
+    max-height: 80px;
+    width: auto;
+    margin: 0 auto;
+}
+
+/* Footer Bottom Row - Three Column Layout */
+.footer-bottom-row {
+    color: #fff;
+    padding: 2rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.footer-bottom-row .foocol {
+    flex: 1;
+    min-width: 250px;
+    padding: 0 1.5rem;
+    margin-bottom: 1rem;
+}
+
+
+.footer-bottom-row .foocol.last {
+    text-align: right;
+}
+
+/* Responsive adjustments for footer */
+@media (max-width: 768px) {
+    .footer-top-row .foocol,
+    .footer-bottom-row {
+        padding: 0 1rem;
+    }
+    
+    .footer-bottom-row {
+        flex-direction: column;
+    }
+    
+    .footer-bottom-row .foocol {
+        flex: none;
+        width: 100%;
+        min-width: auto;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    
+    .footer-bottom-row .foocol.sec {
+        border-left: none;
+        border-right: none;
+        border-top: 1px solid #555;
+        border-bottom: 1px solid #555;
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+    
+    .footer-bottom-row .foocol.last {
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-top-row,
+    .footer-bottom-row {
+        padding: 1.5rem 0;
+    }
+    
+    .footer-top-row .foocol,
+    .footer-bottom-row .foocol {
+        padding: 0 1rem;
+    }
+}  
