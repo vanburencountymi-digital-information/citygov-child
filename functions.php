@@ -85,6 +85,16 @@ function enqueue_anchor_offset_script() {
 }
 add_action('wp_enqueue_scripts', 'enqueue_anchor_offset_script');
 
+function enqueue_department_menu_script() {
+    wp_enqueue_script(
+        'department-menu',
+        get_stylesheet_directory_uri() . '/js/department-menu.js',
+        array(),
+        filemtime(get_stylesheet_directory() . '/js/department-menu.js'),
+        true
+    );
+}
+add_action('wp_enqueue_scripts', 'enqueue_department_menu_script');
 
 function dynamic_doc_library_shortcode($atts) {
     // Get the URL parameter if it exists
@@ -749,14 +759,57 @@ function add_subpages_accordion_styles() {
 add_action('wp_enqueue_scripts', 'add_subpages_accordion_styles', 12); // Higher priority number to load after main styles
 
 /**
- * Get the department root ID by walking up the page hierarchy
+ * Get the department root page ID by walking up the page hierarchy
  * 
- * This function starts from the current page and walks up through all ancestors
- * to find the first page that has a department_id defined. If no department_id
- * is found in the entire hierarchy, it returns null.
+ * This function walks up the page hierarchy until it finds a page that has
+ * a department_id meta field, then returns that page's ID.
  * 
  * @param int $post_id Optional. The post ID to start from. Defaults to current post.
- * @return string|null The department_id if found, null otherwise
+ * @return int|null The page ID of the department root page, or null if not found
+ */
+function get_department_root_page_id($post_id = null) {
+    // If no post_id provided, use current post
+    if ($post_id === null) {
+        global $post;
+        if (!$post) {
+            return null;
+        }
+        $post_id = $post->ID;
+    }
+    
+    // Start with the current page
+    $current_id = $post_id;
+    
+    // Walk up the hierarchy until we find a department_id or reach the top
+    while ($current_id > 0) {
+        // Check if current page has department_id
+        $department_id = get_post_meta($current_id, 'department_id', true);
+        if (!empty($department_id)) {
+            return $current_id; // Return the page ID, not the department_id value
+        }
+        
+        // Get the parent page
+        $parent_id = wp_get_post_parent_id($current_id);
+        if ($parent_id === 0) {
+            // We've reached the top of the hierarchy
+            break;
+        }
+        
+        $current_id = $parent_id;
+    }
+    
+    // No department_id found in the entire hierarchy
+    return null;
+}
+
+/**
+ * Get the department ID value by walking up the page hierarchy
+ * 
+ * This function walks up the page hierarchy until it finds a page that has
+ * a department_id meta field, then returns the department_id value.
+ * 
+ * @param int $post_id Optional. The post ID to start from. Defaults to current post.
+ * @return string|null The department_id value if found, null otherwise
  */
 function get_department_root_id($post_id = null) {
     // If no post_id provided, use current post
@@ -776,7 +829,7 @@ function get_department_root_id($post_id = null) {
         // Check if current page has department_id
         $department_id = get_post_meta($current_id, 'department_id', true);
         if (!empty($department_id)) {
-            return $department_id;
+            return $department_id; // Return the department_id value
         }
         
         // Get the parent page
@@ -1065,6 +1118,51 @@ function display_department_menu($department_id, $args = array()) {
     
     return wp_nav_menu($args);
 }
+
+/**
+ * Custom Walker for Department Menus with Accordion Toggles
+ */
+/* Removing custom walker to use standard WordPress menu system with hover dropdowns
+class Department_Menu_Walker extends Walker_Nav_Menu {
+    
+    function start_el(&$output, $item, $depth = 0, $args = null, $id = 0) {
+        $indent = ($depth) ? str_repeat("\t", $depth) : '';
+        
+        $li_attributes = '';
+        $class_names = $value = '';
+        
+        $classes = empty($item->classes) ? array() : (array) $item->classes;
+        $classes[] = 'menu-item-' . $item->ID;
+        
+        $class_names = join(' ', apply_filters('nav_menu_css_class', array_filter($classes), $item, $args));
+        $class_names = ' class="' . esc_attr($class_names) . '"';
+        
+        $id = apply_filters('nav_menu_item_id', 'menu-item-'. $item->ID, $item, $args);
+        $id = strlen($id) ? ' id="' . esc_attr($id) . '"' : '';
+        
+        $output .= $indent . '<li' . $id . $value . $class_names . $li_attributes . '>';
+        
+        $attributes = ! empty($item->attr_title) ? ' title="'  . esc_attr($item->attr_title) .'"' : '';
+        $attributes .= ! empty($item->target)     ? ' target="' . esc_attr($item->target     ) .'"' : '';
+        $attributes .= ! empty($item->xfn)        ? ' rel="'    . esc_attr($item->xfn        ) .'"' : '';
+        $attributes .= ! empty($item->url)        ? ' href="'   . esc_attr($item->url        ) .'"' : '';
+        
+        $item_output = $args->before;
+        $item_output .= '<a'. $attributes .'>';
+        $item_output .= $args->link_before . apply_filters('the_title', $item->title, $item->ID) . $args->link_after;
+        $item_output .= '</a>';
+        
+        // Add toggle button for items with children
+        if (in_array('menu-item-has-children', $classes)) {
+            $item_output .= '<a href="#" class="accordion-toggle" aria-label="Toggle submenu" tabindex="0">+</a>';
+        }
+        
+        $item_output .= $args->after;
+        
+        $output .= apply_filters('walker_nav_menu_start_el', $item_output, $item, $depth, $args);
+    }
+}
+*/
 
 /**
  * Temporary admin page for generating department menus

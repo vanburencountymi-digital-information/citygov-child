@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../plugins/airtable-directory"
+		},
+		{
+			"path": "../citygov"
+		}
+	],
+	"settings": {
+		"powershell.cwd": "citygov-child"
+	}
+}

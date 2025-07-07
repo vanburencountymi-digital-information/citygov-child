@@ -1548,56 +1548,106 @@ body.single-dlp_document .dlp-download-button:hover {
 .department-menu-section {
     margin: 40px 0;
     padding: 30px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border-left: 4px solid #007cba;
+    background: #fff;
+    box-shadow: rgba(0,0,0,0.4) 0px 2px 4px, rgba(0,0,0,0.3) 0px 7px 13px -3px, rgba(0,0,0,0.2) 0px -3px 0px inset;
+    border-radius: 1rem;
 }
 
 .department-menu-section h2 {
     margin: 0 0 20px 0;
-    color: #333;
+    color: #000;
     font-size: 1.5em;
     font-weight: 600;
 }
 
-.department-menu-section .page-list-ext {
+/* WordPress Department Menu in Sidebar - Matching old subpage styling */
+.department-menu-section .department-menu-sidebar {
     margin: 0;
+    padding: 0;
 }
 
-.department-menu-section .page-list-ext-item {
-    margin-bottom: 15px;
-    padding: 15px;
-    background: #fff;
-    border-radius: 6px;
-    border: 1px solid #e1e5e9;
-    transition: all 0.3s ease;
+.department-menu-section .department-menu-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-.department-menu-section .page-list-ext-item:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    border-color: #007cba;
+.department-menu-section .department-menu-list li {
+    margin-bottom: 0;
+    padding: 10px 0 10px 15px;
+    border-bottom: 1px solid #eee;
 }
 
-.department-menu-section .page-list-ext-title {
-    margin: 0 0 10px 0;
-    font-size: 1.1em;
+.department-menu-section .department-menu-list li:last-child {
+    border-bottom: none;
 }
 
-.department-menu-section .page-list-ext-title a {
-    color: #007cba;
+.department-menu-section .department-menu-list a {
+    display: block;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #a3473b;
     text-decoration: none;
     font-weight: 500;
+    transition: color 0.2s ease;
 }
 
-.department-menu-section .page-list-ext-title a:hover {
-    color: #005a87;
+.department-menu-section .department-menu-list a:hover {
+    color: #a3473b;
     text-decoration: underline;
 }
 
-.department-menu-section .page-list-ext-item-content {
-    color: #666;
-    font-size: 0.9em;
-    line-height: 1.5;
+/* Simple submenu display - no hover, no accordion */
+.department-menu-section .department-menu-list .menu-item-has-children {
+    position: relative;
+}
+
+.department-menu-section .department-menu-list .menu-item-has-children > a {
+    padding-right: 0; /* Normal padding */
+}
+
+/* Submenu styling - always visible, indented like old subpages */
+.department-menu-section .department-menu-list .sub-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 20px; /* Indent submenu items */
+    width: 100%;
+    position: static;
+    left: auto;
+    z-index: auto;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    border-left: 1px solid #ddd; /* Left border for indentation */
+}
+
+.department-menu-section .department-menu-list .sub-menu li {
+    margin-bottom: 0;
+    padding: 5px 0 5px 15px;
+    border-bottom: none;
+}
+
+.department-menu-section .department-menu-list .sub-menu a {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.department-menu-section .department-menu-list .sub-menu a:hover {
+    background: transparent;
+    border: none;
+    color: #a3473b;
+    text-decoration: underline;
+}
+
+.department-menu-section .department-menu-list .sub-menu li:last-child > a {
+    border-bottom: none;
 }
 
 /* Responsive adjustments for department menu */
@@ -1607,7 +1657,11 @@ body.single-dlp_document .dlp-download-button:hover {
         margin: 30px 0;
     }
     
-    .department-menu-section .page-list-ext-item {
+    .department-menu-section .department-menu-list li {
+        margin-bottom: 8px;
+    }
+    
+    .department-menu-section .department-menu-list a {
         padding: 12px;
     }
     
@@ -1615,171 +1669,6 @@ body.single-dlp_document .dlp-download-button:hover {
     .department-menu-section.desktop-only {
         display: none;
     }
-}
-
-/* Accordion styles for sidebar and popup contexts */
-.department-menu-section .page-list-ext-item.has-children .page-title-wrapper {
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.department-menu-section .dropdown-indicator {
-    width: 20px;
-    height: 20px;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.department-menu-section .dropdown-indicator:before,
-.department-menu-section .dropdown-indicator:after {
-    content: '';
-    position: absolute;
-    background-color: #333;
-    transition: all 0.3s ease;
-}
-
-.department-menu-section .dropdown-indicator:before {
-    /* Vertical line of the + */
-    width: 2px;
-    height: 12px;
-    top: 4px;
-    left: 9px;
-}
-
-.department-menu-section .dropdown-indicator:after {
-    /* Horizontal line of the + */
-    width: 12px;
-    height: 2px;
-    top: 9px;
-    left: 4px;
-}
-
-/* When expanded, hide the vertical line to show only - */
-.department-menu-section .page-list-ext-item.expanded .dropdown-indicator:before {
-    opacity: 0;
-}
-
-.department-menu-section .subpages-accordion {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    padding-left: 20px;
-}
-
-.department-menu-section .page-list-ext-item.expanded .subpages-accordion {
-    max-height: 1000px;
-}
-
-/* Ensure accordion styles work in popup context */
-.popup-body .page-list-ext-item.has-children .page-title-wrapper {
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-}
-
-.popup-body .dropdown-indicator {
-    width: 20px;
-    height: 20px;
-    position: relative;
-    flex-shrink: 0;
-    margin-left: 10px;
-}
-
-.popup-body .dropdown-indicator:before,
-.popup-body .dropdown-indicator:after {
-    content: '';
-    position: absolute;
-    background-color: #333;
-    transition: all 0.3s ease;
-}
-
-.popup-body .dropdown-indicator:before {
-    width: 2px;
-    height: 12px;
-    top: 4px;
-    left: 9px;
-}
-
-.popup-body .dropdown-indicator:after {
-    width: 12px;
-    height: 2px;
-    top: 9px;
-    left: 4px;
-}
-
-.popup-body .page-list-ext-item.expanded .dropdown-indicator:before {
-    opacity: 0;
-}
-
-.popup-body .subpages-accordion {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    padding-left: 15px;
-    margin-top: 0;
-}
-
-.popup-body .page-list-ext-item.expanded .subpages-accordion {
-    max-height: 1000px;
-    margin-top: 10px;
-}
-
-/* Additional popup-specific accordion styles */
-.popup-body .page-list-ext-item {
-    border-bottom: 1px solid #f0f0f0;
-    padding: 12px 0;
-}
-
-.popup-body .page-list-ext-item:last-child {
-    border-bottom: none;
-}
-
-.popup-body .page-list-ext-title {
-    margin: 0;
-    flex: 1;
-}
-
-.popup-body .page-list-ext-title a {
-    color: #007cba;
-    text-decoration: none;
-    font-weight: 500;
-    display: block;
-    padding: 4px 0;
-}
-
-.popup-body .page-list-ext-title a:hover {
-    color: #005a87;
-    text-decoration: underline;
-}
-
-.popup-body .subpage-item {
-    padding: 8px 0;
-    margin: 0;
-    border-bottom: 1px solid #f8f8f8;
-}
-
-.popup-body .subpage-item:last-child {
-    border-bottom: none;
-}
-
-.popup-body .subpage-title {
-    margin: 0;
-    font-size: 0.9rem;
-}
-
-.popup-body .subpage-title a {
-    color: #555;
-    text-decoration: none;
-    font-weight: 400;
-}
-
-.popup-body .subpage-title a:hover {
-    color: #007cba;
-    text-decoration: underline;
 }
 
 /* ==========================================================================
@@ -1819,7 +1708,7 @@ body.single-dlp_document .dlp-download-button:hover {
     flex-direction: column;
     align-items: center;
     text-decoration: none;
-    color: #333;
+    color: #000;
     padding: 8px 4px;
     border: none;
     background: none;
@@ -1830,7 +1719,7 @@ body.single-dlp_document .dlp-download-button:hover {
 
 .mobile-menu-link:hover,
 .mobile-menu-button:hover {
-    color: #007cba;
+    color: #a3473b;
 }
 
 .mobile-menu-icon {
@@ -1935,27 +1824,90 @@ body.single-dlp_document .dlp-download-button:hover {
     display: none; /* Hide since we have the popup header */
 }
 
-.popup-body .page-list-ext-item {
-    margin-bottom: 12px;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e1e5e9;
+/* WordPress Department Menu in Popup - Matching old subpage styling */
+.popup-body .department-menu-popup {
+    margin: 0;
+    padding: 0;
 }
 
-.popup-body .page-list-ext-title {
-    font-size: 1rem;
-    margin-bottom: 8px;
+.popup-body .department-menu-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-.popup-body .page-list-ext-title a {
-    color: #007cba;
-    font-weight: 600;
+.popup-body .department-menu-list li {
+    margin-bottom: 0;
+    padding: 8px 0 8px 15px;
+    border-bottom: 1px solid #eee;
 }
 
-.popup-body .page-list-ext-item-content {
-    font-size: 0.85rem;
-    line-height: 1.4;
+.popup-body .department-menu-list li:last-child {
+    border-bottom: none;
+}
+
+.popup-body .department-menu-list a {
+    display: block;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: #a3473b;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.popup-body .department-menu-list a:hover {
+    color: #a3473b;
+    text-decoration: underline;
+}
+
+.popup-body .department-menu-list .menu-item-has-children > a {
+    position: relative;
+    padding-right: 0; /* Normal padding */
+}
+
+/* Submenu styling - always visible, indented like old subpages */
+.popup-body .department-menu-list .sub-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 20px; /* Indent submenu items */
+    width: 100%;
+    position: static;
+    left: auto;
+    z-index: auto;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    border-left: 1px solid #ddd; /* Left border for indentation */
+}
+
+.popup-body .department-menu-list .sub-menu li {
+    margin-bottom: 0;
+    padding: 4px 0 4px 15px;
+    border-bottom: none;
+}
+
+.popup-body .department-menu-list .sub-menu a {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.popup-body .department-menu-list .sub-menu a:hover {
+    background: transparent;
+    border: none;
+    color: #a3473b;
+    text-decoration: underline;
+}
+
+.popup-body .department-menu-list .sub-menu li:last-child > a {
+    border-bottom: none;
 }
 
 /* Show mobile footer menu on mobile devices */
