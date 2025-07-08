@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../citygov"
+		},
+		{
+			"path": "../../plugins/dept-admin-dashboard"
 		}
 	],
 	"settings": {
