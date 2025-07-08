@@ -772,10 +772,13 @@ function get_department_root_page_id($post_id = null) {
     if ($post_id === null) {
         global $post;
         if (!$post) {
+            error_log("get_department_root_page_id: No current post found");
             return null;
         }
         $post_id = $post->ID;
     }
+    
+    error_log("get_department_root_page_id: Starting with post_id = {$post_id}");
     
     // Start with the current page
     $current_id = $post_id;
@@ -784,14 +787,20 @@ function get_department_root_page_id($post_id = null) {
     while ($current_id > 0) {
         // Check if current page has department_id
         $department_id = get_post_meta($current_id, 'department_id', true);
+        error_log("get_department_root_page_id: Checking page {$current_id}, department_id = '{$department_id}'");
+        
         if (!empty($department_id)) {
+            error_log("get_department_root_page_id: Found department_id '{$department_id}' on page {$current_id}");
             return $current_id; // Return the page ID, not the department_id value
         }
         
         // Get the parent page
         $parent_id = wp_get_post_parent_id($current_id);
+        error_log("get_department_root_page_id: Parent of {$current_id} is {$parent_id}");
+        
         if ($parent_id === 0) {
             // We've reached the top of the hierarchy
+            error_log("get_department_root_page_id: Reached top of hierarchy, no department_id found");
             break;
         }
         
@@ -799,6 +808,7 @@ function get_department_root_page_id($post_id = null) {
     }
     
     // No department_id found in the entire hierarchy
+    error_log("get_department_root_page_id: No department_id found in hierarchy starting from {$post_id}");
     return null;
 }
 
@@ -901,38 +911,132 @@ function get_department_root_name($post_id = null) {
  * @return int|false The menu ID on success, false on failure
  */
 function ensure_department_menu_exists($department_root_id, $force_regenerate = false) {
+    error_log("ensure_department_menu_exists: Starting with department_root_id = {$department_root_id}");
+    
     // Get the department ID from the root page
     $dept_id = get_post_meta($department_root_id, 'department_id', true);
     if (!$dept_id) {
-        error_log("No department_id found for page ID: {$department_root_id}");
+        error_log("ensure_department_menu_exists: No department_id found for page ID: {$department_root_id}");
         return false;
     }
     
-    $menu_name = "Department Menu - " . get_the_title($department_root_id);
-    $menu_slug = "department_menu_{$dept_id}";
+    error_log("ensure_department_menu_exists: Found department_id = {$dept_id}");
     
-    // Check if menu already exists
+    // Create user-friendly menu name
+    $department_name = get_the_title($department_root_id);
+    $menu_name = "Department Menu - " . $department_name;
+    
+    // Create a unique slug that's safe for WordPress but includes department info
+    $menu_slug = "department_menu_" . sanitize_title($department_name) . "_{$dept_id}";
+    
+    // Debug: Log what we're looking for
+    error_log("ensure_department_menu_exists: Looking for department menu - Slug: {$menu_slug}, Name: {$menu_name}, Dept ID: {$dept_id}");
+    
+    // Check if menu already exists by slug
     $existing_menu = wp_get_nav_menu_object($menu_slug);
     
     if ($existing_menu && !$force_regenerate) {
         // Menu exists and we're not forcing regeneration
+        error_log("ensure_department_menu_exists: Found existing menu: {$existing_menu->name} (ID: {$existing_menu->term_id})");
         return $existing_menu->term_id;
+    }
+    
+    // Also check if a menu with the same name exists (in case it was created manually)
+    $all_menus = wp_get_nav_menus();
+    $existing_menu_by_name = null;
+    foreach ($all_menus as $menu) {
+        if ($menu->name === $menu_name) {
+            $existing_menu_by_name = $menu;
+            break;
+        }
+    }
+    
+    if ($existing_menu_by_name && !$force_regenerate) {
+        // Menu with same name exists, use it
+        error_log("ensure_department_menu_exists: Found existing menu by name: {$existing_menu_by_name->name} (ID: {$existing_menu_by_name->term_id})");
+        return $existing_menu_by_name->term_id;
     }
     
     // If menu exists and we're forcing regeneration, delete it first
     if ($existing_menu && $force_regenerate) {
+        error_log("ensure_department_menu_exists: Deleting existing menu for regeneration: {$existing_menu->name}");
         wp_delete_nav_menu($existing_menu->term_id);
     }
     
-    // Create new menu
-    $menu_id = wp_create_nav_menu($menu_slug);
+    if ($existing_menu_by_name && $force_regenerate) {
+        error_log("ensure_department_menu_exists: Deleting existing menu by name for regeneration: {$existing_menu_by_name->name}");
+        wp_delete_nav_menu($existing_menu_by_name->term_id);
+    }
+    
+    // Create new menu with the user-friendly name as the slug initially
+    // This ensures the display name starts correctly
+    error_log("ensure_department_menu_exists: Creating new menu with name: {$menu_name}");
+    $menu_id = wp_create_nav_menu($menu_name);
     if (is_wp_error($menu_id)) {
-        error_log("Failed to create menu for department {$dept_id}: " . $menu_id->get_error_message());
+        error_log("ensure_department_menu_exists: Failed to create menu for department {$dept_id}: " . $menu_id->get_error_message());
         return false;
     }
     
-    // Set menu name
-    wp_update_nav_menu_object($menu_id, array('menu-name' => $menu_name));
+    error_log("ensure_department_menu_exists: Successfully created menu with ID: {$menu_id}");
+    
+    // Now update the slug to our desired format while keeping the name
+    $menu_object = wp_get_nav_menu_object($menu_id);
+    if ($menu_object) {
+        // Update the term to have our custom slug while keeping the name
+        $update_result = wp_update_term($menu_id, 'nav_menu', array(
+            'name' => $menu_name,
+            'slug' => $menu_slug
+        ));
+        
+        if (is_wp_error($update_result)) {
+            error_log("ensure_department_menu_exists: Failed to update menu slug: " . $update_result->get_error_message());
+        } else {
+            error_log("ensure_department_menu_exists: Successfully updated menu slug to: {$menu_slug}");
+        }
+    }
+    
+    error_log("ensure_department_menu_exists: Created menu: {$menu_name} (ID: {$menu_id})");
+    
+    // Add some common department-specific menu items FIRST
+    $additional_items = array(
+        array(
+            'title' => 'Department Home',
+            'url' => get_permalink($department_root_id),
+            'type' => 'custom'
+        ),
+        array(
+            'title' => 'Contact Us',
+            'url' => get_permalink($department_root_id) . '#contact',
+            'type' => 'custom',
+            'classes' => array('contact-us-menu-item')
+        ),
+        array(
+            'title' => 'Staff Directory',
+            'url' => home_url('/directory/' . generate_directory_slug(get_the_title($department_root_id)) . '/'),
+            'type' => 'custom'
+        )
+    );
+    
+    $additional_items_created = 0;
+    foreach ($additional_items as $item) {
+        $additional_item_data = array(
+            'menu-item-title' => $item['title'],
+            'menu-item-url' => $item['url'],
+            'menu-item-type' => $item['type'],
+            'menu-item-status' => 'publish'
+        );
+        
+        if (isset($item['classes'])) {
+            $additional_item_data['menu-item-classes'] = implode(' ', $item['classes']);
+        }
+        
+        $additional_item_id = wp_update_nav_menu_item($menu_id, 0, $additional_item_data);
+        if ($additional_item_id && !is_wp_error($additional_item_id)) {
+            $additional_items_created++;
+        }
+    }
+    
+    error_log("ensure_department_menu_exists: Added {$additional_items_created} additional items");
     
     // Get all direct children of the department root
     $subpages_args = array(
@@ -945,6 +1049,8 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
     );
     
     $subpages = get_pages($subpages_args);
+    error_log("ensure_department_menu_exists: Found " . count($subpages) . " subpages for department {$department_root_id}");
+    
     $menu_items_created = 0;
     
     if (!empty($subpages)) {
@@ -1002,40 +1108,7 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
         }
     }
     
-    // Add some common department-specific menu items
-    $additional_items = array(
-        array(
-            'title' => 'Contact Us',
-            'url' => get_permalink($department_root_id) . '#contact',
-            'type' => 'custom'
-        ),
-        array(
-            'title' => 'Staff Directory',
-            'url' => get_permalink($department_root_id) . '#staff',
-            'type' => 'custom'
-        ),
-        array(
-            'title' => 'Department Home',
-            'url' => get_permalink($department_root_id),
-            'type' => 'custom'
-        )
-    );
-    
-    foreach ($additional_items as $item) {
-        $additional_item_data = array(
-            'menu-item-title' => $item['title'],
-            'menu-item-url' => $item['url'],
-            'menu-item-type' => $item['type'],
-            'menu-item-status' => 'publish'
-        );
-        
-        $additional_item_id = wp_update_nav_menu_item($menu_id, 0, $additional_item_data);
-        if ($additional_item_id && !is_wp_error($additional_item_id)) {
-            $menu_items_created++;
-        }
-    }
-    
-    error_log("Created department menu for {$dept_id} with {$menu_items_created} items");
+    error_log("ensure_department_menu_exists: Created department menu for {$dept_id} with {$additional_items_created} additional items and {$menu_items_created} page items");
     return $menu_id;
 }
 
@@ -1089,6 +1162,15 @@ function generate_all_department_menus($force_regenerate = false) {
  * @return WP_Term|false The menu object or false if not found
  */
 function get_department_menu($department_id) {
+    // First try to find by the new slug format
+    $menus = wp_get_nav_menus();
+    foreach ($menus as $menu) {
+        if (strpos($menu->slug, "department_menu_") === 0 && strpos($menu->slug, "_{$department_id}") !== false) {
+            return $menu;
+        }
+    }
+    
+    // Fallback to old format for backward compatibility
     $menu_slug = "department_menu_{$department_id}";
     return wp_get_nav_menu_object($menu_slug);
 }
@@ -1165,6 +1247,112 @@ class Department_Menu_Walker extends Walker_Nav_Menu {
 */
 
 /**
+ * List all existing department menus for debugging
+ * 
+ * @return array Array of department menus with their details
+ */
+function list_all_department_menus() {
+    $all_menus = wp_get_nav_menus();
+    $department_menus = array();
+    
+    foreach ($all_menus as $menu) {
+        // Check if this is a department menu (either old or new format)
+        if (strpos($menu->slug, 'department_menu_') === 0) {
+            $department_menus[] = array(
+                'id' => $menu->term_id,
+                'name' => $menu->name,
+                'slug' => $menu->slug,
+                'count' => $menu->count,
+                'format' => strpos($menu->slug, 'department_menu_') === 0 && preg_match('/_\d+$/', $menu->slug) ? 'new' : 'old'
+            );
+        }
+    }
+    
+    return $department_menus;
+}
+
+/**
+ * Delete all existing department menus
+ * 
+ * This function finds and deletes all menus that match the department menu pattern
+ * without affecting other menus like the main navigation.
+ * 
+ * @return array Array of deleted menu information
+ */
+function delete_all_department_menus() {
+    $all_menus = wp_get_nav_menus();
+    $deleted_menus = array();
+    
+    foreach ($all_menus as $menu) {
+        // Check if this is a department menu by either:
+        // 1. Slug starts with 'department_menu_'
+        // 2. Display name starts with 'Department Menu -'
+        $is_department_menu = false;
+        $reason = '';
+        
+        if (strpos($menu->slug, 'department_menu_') === 0) {
+            $is_department_menu = true;
+            $reason = 'slug pattern';
+        } elseif (strpos($menu->name, 'Department Menu -') === 0) {
+            $is_department_menu = true;
+            $reason = 'name pattern';
+        }
+        
+        if ($is_department_menu) {
+            error_log("delete_all_department_menus: Deleting department menu - {$menu->name} (ID: {$menu->term_id}, Slug: {$menu->slug}, Reason: {$reason})");
+            
+            $deleted = wp_delete_nav_menu($menu->term_id);
+            if ($deleted) {
+                $deleted_menus[] = array(
+                    'id' => $menu->term_id,
+                    'name' => $menu->name,
+                    'slug' => $menu->slug,
+                    'reason' => $reason,
+                    'success' => true
+                );
+            } else {
+                $deleted_menus[] = array(
+                    'id' => $menu->term_id,
+                    'name' => $menu->name,
+                    'slug' => $menu->slug,
+                    'reason' => $reason,
+                    'success' => false,
+                    'error' => 'Failed to delete menu'
+                );
+            }
+        }
+    }
+    
+    error_log("delete_all_department_menus: Deleted " . count($deleted_menus) . " department menus");
+    return $deleted_menus;
+}
+
+/**
+ * Reset and regenerate all department menus
+ * 
+ * This function deletes all existing department menus and then regenerates them
+ * from scratch. This is useful when there are conflicts or when you want to
+ * ensure all menus are using the latest format.
+ * 
+ * @return array Array of results for each department processed
+ */
+function reset_and_regenerate_all_department_menus() {
+    // First, delete all existing department menus
+    $deleted_menus = delete_all_department_menus();
+    
+    // Then regenerate all department menus
+    $results = generate_all_department_menus(false); // false = don't force regenerate since we just deleted them
+    
+    // Combine the results
+    $combined_results = array(
+        'deleted_menus' => $deleted_menus,
+        'regenerated_menus' => $results
+    );
+    
+    return $combined_results;
+}
+
+/**
  * Temporary admin page for generating department menus
  * Remove this function after you're done testing
  */
@@ -1186,6 +1374,7 @@ function department_menu_generator_page() {
     
     $message = '';
     $results = array();
+    $deleted_menus = array();
     
     if (isset($_POST['generate_menus'])) {
         $force_regenerate = isset($_POST['force_regenerate']);
@@ -1197,6 +1386,31 @@ function department_menu_generator_page() {
         $message = "<div class='notice notice-success'><p>Generated {$success_count} out of {$total_count} department menus successfully!</p></div>";
     }
     
+    if (isset($_POST['migrate_menus'])) {
+        $results = migrate_department_menus_to_new_format();
+        
+        $migrated_count = count(array_filter($results, function($r) { return $r['action'] === 'migrated'; }));
+        $already_new_count = count(array_filter($results, function($r) { return $r['action'] === 'already_new_format'; }));
+        $total_count = count($results);
+        
+        $message = "<div class='notice notice-success'><p>Migration completed: {$migrated_count} menus migrated, {$already_new_count} already in new format, {$total_count} total processed.</p></div>";
+    }
+    
+    if (isset($_POST['reset_and_regenerate'])) {
+        $combined_results = reset_and_regenerate_all_department_menus();
+        $deleted_menus = $combined_results['deleted_menus'];
+        $results = $combined_results['regenerated_menus'];
+        
+        $deleted_count = count(array_filter($deleted_menus, function($d) { return $d['success']; }));
+        $success_count = count(array_filter($results, function($r) { return $r['success']; }));
+        $total_count = count($results);
+        
+        $message = "<div class='notice notice-success'><p>Reset and regenerate completed: {$deleted_count} menus deleted, {$success_count} out of {$total_count} department menus regenerated successfully!</p></div>";
+    }
+    
+    // Get current department menus for display
+    $current_menus = list_all_department_menus();
+    
     ?>
     <div class="wrap">
         <h1>Generate Department Menus</h1>
@@ -1206,8 +1420,58 @@ function department_menu_generator_page() {
         <?php endif; ?>
         
         <div class="card">
+            <h2>Current Department Menus</h2>
+            <?php if (!empty($current_menus)): ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>Menu ID</th>
+                            <th>Display Name</th>
+                            <th>Slug</th>
+                            <th>Items</th>
+                            <th>Format</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($current_menus as $menu): ?>
+                            <tr>
+                                <td><?php echo esc_html($menu['id']); ?></td>
+                                <td><?php echo esc_html($menu['name']); ?></td>
+                                <td><code><?php echo esc_html($menu['slug']); ?></code></td>
+                                <td><?php echo esc_html($menu['count']); ?></td>
+                                <td>
+                                    <?php if ($menu['format'] === 'new'): ?>
+                                        <span style="color: green;">New Format</span>
+                                    <?php else: ?>
+                                        <span style="color: orange;">Old Format</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <p>No department menus found.</p>
+            <?php endif; ?>
+        </div>
+        
+        <div class="card">
+            <h2>Reset and Regenerate All Department Menus</h2>
+            <p><strong>⚠️ WARNING:</strong> This will delete ALL existing department menus and recreate them from scratch.</p>
+            <p>This is useful when there are naming conflicts or when you want to ensure all menus use the latest format.</p>
+            <p><strong>Safe:</strong> This will NOT affect other menus like your main navigation, footer menu, etc.</p>
+            
+            <form method="post">
+                <p>
+                    <input type="submit" name="reset_and_regenerate" class="button button-primary" value="Reset and Regenerate All Department Menus" onclick="return confirm('Are you sure you want to delete all department menus and regenerate them? This action cannot be undone.');">
+                </p>
+            </form>
+        </div>
+        
+        <div class="card">
             <h2>Generate All Department Menus</h2>
             <p>This will create navigation menus for all departments that have a <code>department_id</code> set.</p>
+            <p><strong>New Format:</strong> Menus will now be named "Department Menu - {Department Name}" for better user-friendliness.</p>
             
             <form method="post">
                 <p>
@@ -1217,7 +1481,19 @@ function department_menu_generator_page() {
                     </label>
                 </p>
                 <p>
-                    <input type="submit" name="generate_menus" class="button button-primary" value="Generate Department Menus">
+                    <input type="submit" name="generate_menus" class="button button-secondary" value="Generate Department Menus">
+                </p>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>Migrate Existing Menus to New Format</h2>
+            <p>If you have existing department menus with the old naming format, you can migrate them to the new user-friendly format.</p>
+            <p>This will preserve all menu items while updating the menu names to "Department Menu - {Department Name}".</p>
+            
+            <form method="post">
+                <p>
+                    <input type="submit" name="migrate_menus" class="button button-secondary" value="Migrate Existing Menus">
                 </p>
             </form>
         </div>
@@ -1225,6 +1501,48 @@ function department_menu_generator_page() {
         <?php if (!empty($results)): ?>
             <div class="card">
                 <h2>Results</h2>
+                
+                <?php if (!empty($deleted_menus)): ?>
+                    <h3>Deleted Menus</h3>
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th>Menu ID</th>
+                                <th>Display Name</th>
+                                <th>Slug</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($deleted_menus as $menu): ?>
+                                <tr>
+                                    <td><?php echo esc_html($menu['id']); ?></td>
+                                    <td><?php echo esc_html($menu['name']); ?></td>
+                                    <td><code><?php echo esc_html($menu['slug']); ?></code></td>
+                                    <td>
+                                        <?php if ($menu['reason'] === 'slug pattern'): ?>
+                                            <span style="color: blue;">Slug Pattern</span>
+                                        <?php elseif ($menu['reason'] === 'name pattern'): ?>
+                                            <span style="color: orange;">Name Pattern</span>
+                                        <?php else: ?>
+                                            <?php echo esc_html($menu['reason']); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($menu['success']): ?>
+                                            <span style="color: green;">✓ Deleted</span>
+                                        <?php else: ?>
+                                            <span style="color: red;">✗ Failed</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+                
+                <h3>Regenerated Menus</h3>
                 <table class="wp-list-table widefat fixed striped">
                     <thead>
                         <tr>
@@ -1233,6 +1551,7 @@ function department_menu_generator_page() {
                             <th>Department ID</th>
                             <th>Menu ID</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1241,13 +1560,47 @@ function department_menu_generator_page() {
                                 <td><?php echo esc_html($result['page_title']); ?></td>
                                 <td><?php echo esc_html($result['page_id']); ?></td>
                                 <td><?php echo esc_html($result['department_id']); ?></td>
-                                <td><?php echo $result['menu_id'] ? esc_html($result['menu_id']) : 'Failed'; ?></td>
+                                <td>
+                                    <?php 
+                                    if (isset($result['new_menu_id'])) {
+                                        echo esc_html($result['new_menu_id']);
+                                    } elseif (isset($result['menu_id'])) {
+                                        echo esc_html($result['menu_id']);
+                                    } else {
+                                        echo 'Failed';
+                                    }
+                                    ?>
+                                </td>
                                 <td>
                                     <?php if ($result['success']): ?>
                                         <span style="color: green;">✓ Success</span>
                                     <?php else: ?>
                                         <span style="color: red;">✗ Failed</span>
                                     <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php 
+                                    if (isset($result['action'])) {
+                                        switch ($result['action']) {
+                                            case 'migrated':
+                                                echo '<span style="color: blue;">Migrated (' . $result['items_copied'] . ' items)</span>';
+                                                break;
+                                            case 'already_new_format':
+                                                echo '<span style="color: green;">Already New Format</span>';
+                                                break;
+                                            case 'migration_failed':
+                                                echo '<span style="color: red;">Migration Failed</span>';
+                                                break;
+                                            case 'no_menu_found':
+                                                echo '<span style="color: orange;">No Menu Found</span>';
+                                                break;
+                                            default:
+                                                echo esc_html($result['action']);
+                                        }
+                                    } else {
+                                        echo 'Generated';
+                                    }
+                                    ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -1264,6 +1617,141 @@ function department_menu_generator_page() {
         </div>
     </div>
     <?php
+}
+
+/**
+ * Migrate existing department menus to the new naming format
+ * 
+ * This function finds existing menus with the old format and updates them
+ * to use the new user-friendly naming while preserving their content.
+ * 
+ * @return array Array of migration results
+ */
+function migrate_department_menus_to_new_format() {
+    $results = array();
+    
+    // Get all pages that have department_id set
+    $args = array(
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'meta_query' => array(
+            array(
+                'key' => 'department_id',
+                'compare' => 'EXISTS'
+            )
+        ),
+        'posts_per_page' => -1
+    );
+    
+    $department_pages = get_posts($args);
+    
+    foreach ($department_pages as $page) {
+        $dept_id = get_post_meta($page->ID, 'department_id', true);
+        $department_name = $page->post_title;
+        
+        // Check for old format menu
+        $old_menu_slug = "department_menu_{$dept_id}";
+        $old_menu = wp_get_nav_menu_object($old_menu_slug);
+        
+        // Check for new format menu
+        $new_menu_slug = "department_menu_" . sanitize_title($department_name) . "_{$dept_id}";
+        $new_menu = wp_get_nav_menu_object($new_menu_slug);
+        
+        if ($old_menu && !$new_menu) {
+            // Migrate old menu to new format
+            $menu_items = wp_get_nav_menu_items($old_menu->term_id);
+            
+            // Create new menu with user-friendly name
+            $new_menu_id = wp_create_nav_menu($new_menu_slug);
+            if (!is_wp_error($new_menu_id)) {
+                // Set the user-friendly name
+                wp_update_nav_menu_object($new_menu_id, array('menu-name' => "Department Menu - " . $department_name));
+                
+                // Copy all menu items
+                $items_copied = 0;
+                foreach ($menu_items as $item) {
+                    $new_item_data = array(
+                        'menu-item-title' => $item->title,
+                        'menu-item-object' => $item->object,
+                        'menu-item-object-id' => $item->object_id,
+                        'menu-item-type' => $item->type,
+                        'menu-item-status' => 'publish',
+                        'menu-item-url' => $item->url,
+                        'menu-item-parent-id' => $item->menu_item_parent
+                    );
+                    
+                    $new_item_id = wp_update_nav_menu_item($new_menu_id, 0, $new_item_data);
+                    if ($new_item_id && !is_wp_error($new_item_id)) {
+                        $items_copied++;
+                    }
+                }
+                
+                // Delete old menu
+                wp_delete_nav_menu($old_menu->term_id);
+                
+                $results[] = array(
+                    'page_id' => $page->ID,
+                    'page_title' => $page->post_title,
+                    'department_id' => $dept_id,
+                    'old_menu_id' => $old_menu->term_id,
+                    'new_menu_id' => $new_menu_id,
+                    'items_copied' => $items_copied,
+                    'success' => true,
+                    'action' => 'migrated'
+                );
+            } else {
+                $results[] = array(
+                    'page_id' => $page->ID,
+                    'page_title' => $page->post_title,
+                    'department_id' => $dept_id,
+                    'success' => false,
+                    'error' => 'Failed to create new menu',
+                    'action' => 'migration_failed'
+                );
+            }
+        } elseif ($new_menu) {
+            $results[] = array(
+                'page_id' => $page->ID,
+                'page_title' => $page->post_title,
+                'department_id' => $dept_id,
+                'menu_id' => $new_menu->term_id,
+                'success' => true,
+                'action' => 'already_new_format'
+            );
+        } else {
+            $results[] = array(
+                'page_id' => $page->ID,
+                'page_title' => $page->post_title,
+                'department_id' => $dept_id,
+                'success' => false,
+                'error' => 'No existing menu found',
+                'action' => 'no_menu_found'
+            );
+        }
+    }
+    
+    return $results;
+}
+
+/**
+ * Generate directory slug from department name
+ * 
+ * @param string $name Department name
+ * @return string URL-friendly slug
+ */
+function generate_directory_slug($name) {
+    // Convert department name to lowercase and replace spaces with hyphens
+    $slug = sanitize_title($name);
+    
+    // Ensure uniqueness if the slug already exists
+    $original_slug = $slug;
+    $counter = 1;
+    while (get_page_by_path($slug, OBJECT, 'directory_page')) {
+        $slug = $original_slug . '-' . $counter;
+        $counter++;
+    }
+    
+    return $slug;
 }
 
 

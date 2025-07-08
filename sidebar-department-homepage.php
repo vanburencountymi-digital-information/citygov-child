@@ -29,9 +29,15 @@ $current_department_id = $department_id;
             // Get the department ID from the root page
             $dept_id = get_post_meta($department_root_page_id, 'department_id', true);
             
+            // Debug information
+            echo '<!-- Debug: department_root_page_id = ' . $department_root_page_id . ' -->';
+            echo '<!-- Debug: dept_id = ' . $dept_id . ' -->';
+            
             if (!empty($dept_id)) {
                 // Ensure the department menu exists
                 $menu_id = ensure_department_menu_exists($department_root_page_id);
+                
+                echo '<!-- Debug: menu_id = ' . $menu_id . ' -->';
                 
                 if ($menu_id) {
                     // Display the WordPress department menu
@@ -48,12 +54,16 @@ $current_department_id = $department_id;
                     wp_nav_menu($menu_args);
                 } else {
                     echo '<p>Department menu could not be loaded.</p>';
+                    echo '<!-- Debug: ensure_department_menu_exists returned false -->';
                 }
             } else {
                 echo '<p>No department ID found for this page.</p>';
+                echo '<!-- Debug: dept_id is empty -->';
             }
             
             echo '</div>';
+        } else {
+            echo '<!-- Debug: department_root_page_id is empty -->';
         }
     ?>
     <?php if (is_active_sidebar('department-homepage')) { ?>

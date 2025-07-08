@@ -30,7 +30,7 @@
         <?php endif; ?>
         
         <div class="mobile-menu-item">
-            <a href="<?php echo esc_url(home_url('/contact')); ?>" class="mobile-menu-link">
+            <a href="<?php echo esc_url(get_permalink() . '#contact'); ?>" class="mobile-menu-link">
                 <span class="menu-icon">📞</span>
                 <span class="menu-text">Contact</span>
             </a>

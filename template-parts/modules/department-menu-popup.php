@@ -89,5 +89,12 @@ document.addEventListener("DOMContentLoaded", function() {
             closePopup();
         }
     });
+    
+    // Close on Contact Us menu item click
+    document.addEventListener("click", function(e) {
+        if (e.target.closest('.contact-us-menu-item') && !popup.classList.contains("hidden")) {
+            closePopup();
+        }
+    });
 });
 </script> 
