@@ -29,6 +29,11 @@ while ( have_posts() ) :
 
           <header class="entry-header">
             <h1 class="entry-title"><?php the_title(); ?></h1>
+            <?php if ( current_user_can( 'edit_posts' ) ) : ?>
+              <div class="admin-actions">
+                <button id="replace-pdf-btn" class="admin-button">Replace PDF</button>
+              </div>
+            <?php endif; ?>
           </header>
 
           <div class="entry-content">
@@ -125,6 +130,41 @@ while ( have_posts() ) :
 
   </main><!-- #main -->
 </div><!-- #primary -->
+
+<!-- PDF Replacement Modal -->
+<?php if ( current_user_can( 'edit_posts' ) ) : ?>
+<div id="pdf-replace-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Replace PDF Document</h3>
+      <button class="modal-close" id="close-pdf-modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="pdf-replace-form" enctype="multipart/form-data">
+        <?php wp_nonce_field( 'replace_pdf_nonce', 'pdf_replace_nonce' ); ?>
+        <input type="hidden" name="post_id" value="<?php echo get_the_ID(); ?>">
+        <input type="hidden" name="action" value="replace_pdf_document">
+        
+        <div class="form-group">
+          <label for="pdf-file">Select New PDF File:</label>
+          <input type="file" id="pdf-file" name="pdf_file" accept=".pdf" required>
+          <p class="file-info">Maximum file size: 10MB</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="pdf-title">Document Title (optional):</label>
+          <input type="text" id="pdf-title" name="pdf_title" value="<?php echo esc_attr( get_the_title() ); ?>">
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="submit-btn">Replace PDF</button>
+          <button type="button" class="cancel-btn" id="cancel-pdf-replace">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php
 endwhile;

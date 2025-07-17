@@ -7,6 +7,23 @@ function citygov_child_enqueue_styles() {
     wp_enqueue_style('citygov-child-style', get_stylesheet_uri(), array('citygov-style'), wp_get_theme()->get('Version'));
 }
 add_action('wp_enqueue_scripts', 'citygov_child_enqueue_styles');
+
+// Enqueue PDF replacement modal script
+function enqueue_pdf_replace_modal_script() {
+    if ( is_singular( 'dlp_document' ) && current_user_can( 'edit_posts' ) ) {
+        wp_enqueue_script(
+            'pdf-replace-modal',
+            get_stylesheet_directory_uri() . '/js/pdf-replace-modal.js',
+            array(),
+            filemtime(get_stylesheet_directory() . '/js/pdf-replace-modal.js'),
+            true
+        );
+        
+        // Localize script with AJAX URL
+        wp_localize_script('pdf-replace-modal', 'ajaxurl', admin_url('admin-ajax.php'));
+    }
+}
+add_action('wp_enqueue_scripts', 'enqueue_pdf_replace_modal_script');
 //Register a separate sidebar for the department homepage
 function my_theme_widgets_init() {
     // Department Homepage Sidebar
@@ -1752,6 +1769,308 @@ function generate_directory_slug($name) {
     }
     
     return $slug;
+}
+
+/**
+ * AJAX handler for replacing PDF documents
+ */
+function handle_replace_pdf_document() {
+    // Check nonce for security
+    if (!wp_verify_nonce($_POST['pdf_replace_nonce'], 'replace_pdf_nonce')) {
+        wp_die(json_encode(array('success' => false, 'data' => 'Security check failed')));
+    }
+    
+    // Check user permissions
+    if (!current_user_can('edit_posts')) {
+        wp_die(json_encode(array('success' => false, 'data' => 'Insufficient permissions')));
+    }
+    
+    // Check if file was uploaded
+    if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] !== UPLOAD_ERR_OK) {
+        wp_die(json_encode(array('success' => false, 'data' => 'No file uploaded or upload error')));
+    }
+    
+    $file = $_FILES['pdf_file'];
+    $post_id = intval($_POST['post_id']);
+    $new_title = sanitize_text_field($_POST['pdf_title']);
+    
+    // Validate post exists and is a document
+    $post = get_post($post_id);
+    if (!$post || $post->post_type !== 'dlp_document') {
+        wp_die(json_encode(array('success' => false, 'data' => 'Invalid document')));
+    }
+    
+    // Validate file type
+    $file_type = wp_check_filetype($file['name']);
+    if ($file_type['type'] !== 'application/pdf') {
+        wp_die(json_encode(array('success' => false, 'data' => 'Only PDF files are allowed')));
+    }
+    
+    // Validate file size (10MB limit)
+    if ($file['size'] > 10 * 1024 * 1024) {
+        wp_die(json_encode(array('success' => false, 'data' => 'File size must be less than 10MB')));
+    }
+    
+    // Get the current document object
+    $document = dlp_get_document($post_id);
+    if (!$document) {
+        wp_die(json_encode(array('success' => false, 'data' => 'Could not load document')));
+    }
+    
+    // Verify this is a valid document
+    if (!is_object($document) || !method_exists($document, 'get_download_url')) {
+        wp_die(json_encode(array('success' => false, 'data' => 'Invalid document object')));
+    }
+    
+    // Debug: Log all post meta to understand Document Library Pro structure
+    $all_post_meta = get_post_meta($post_id);
+    error_log('Document Library Pro Debug - All post meta for post ' . $post_id . ': ' . print_r($all_post_meta, true));
+    
+    // Get current file ID from post meta (this is what Document Library Pro actually uses)
+    $current_file_id = get_post_meta($post_id, '_dlp_attached_file_id', true);
+    error_log('Document Library Pro Debug - Current file ID: ' . $current_file_id);
+    
+    // Debug: Check what methods are available on the document object
+    if (is_object($document)) {
+        $methods = get_class_methods($document);
+        error_log('Document Library Pro Debug - Available methods: ' . print_r($methods, true));
+        
+        // Try to get download URL to see how it works
+        if (method_exists($document, 'get_download_url')) {
+            $download_url = $document->get_download_url();
+            error_log('Document Library Pro Debug - Download URL: ' . $download_url);
+        }
+    }
+    
+    // Upload the new file
+    require_once(ABSPATH . 'wp-admin/includes/file.php');
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+    require_once(ABSPATH . 'wp-admin/includes/media.php');
+    
+    $upload = wp_handle_upload($file, array('test_form' => false));
+    
+    if (isset($upload['error'])) {
+        wp_die(json_encode(array('success' => false, 'data' => 'Upload failed: ' . $upload['error'])));
+    }
+    
+    // Create attachment post
+    $attachment = array(
+        'post_title' => $new_title ?: basename($upload['file']),
+        'post_content' => '',
+        'post_status' => 'inherit',
+        'post_mime_type' => $upload['type']
+    );
+    
+    $attachment_id = wp_insert_attachment($attachment, $upload['file'], $post_id);
+    
+    if (is_wp_error($attachment_id)) {
+        wp_die(json_encode(array('success' => false, 'data' => 'Failed to create attachment')));
+    }
+    
+    // Generate attachment metadata
+    $attachment_data = wp_generate_attachment_metadata($attachment_id, $upload['file']);
+    wp_update_attachment_metadata($attachment_id, $attachment_data);
+    
+    // Debug: Log the new attachment ID
+    error_log('Document Library Pro Debug - New attachment ID: ' . $attachment_id);
+    
+    // Use the document object's set_file_id method to properly update the file
+    if (method_exists($document, 'set_file_id')) {
+        $document->set_file_id($attachment_id);
+        error_log('Document Library Pro Debug - Set file ID via document object');
+    }
+    
+    // Update the correct post meta that Document Library Pro uses
+    $update_result = update_post_meta($post_id, '_dlp_attached_file_id', $attachment_id);
+    error_log('Document Library Pro Debug - Update _dlp_attached_file_id result: ' . ($update_result ? 'true' : 'false'));
+    
+    // Also update the attachment_id meta for consistency
+    update_post_meta($post_id, '_dlp_attachment_id', $attachment_id);
+    
+    // Update post title if provided
+    if ($new_title) {
+        wp_update_post(array(
+            'ID' => $post_id,
+            'post_title' => $new_title
+        ));
+    }
+    
+    // Delete the old attachment if it exists and is different
+    if ($current_file_id && $current_file_id !== $attachment_id) {
+        $delete_result = wp_delete_attachment($current_file_id, true);
+        error_log('Document Library Pro Debug - Delete old attachment result: ' . ($delete_result ? 'true' : 'false'));
+    }
+    
+    // Debug: Log final post meta after update
+    $final_post_meta = get_post_meta($post_id);
+    error_log('Document Library Pro Debug - Final post meta: ' . print_r($final_post_meta, true));
+    
+    // Refresh the document object to ensure it has the new file
+    $updated_document = dlp_get_document($post_id);
+    if ($updated_document && method_exists($updated_document, 'get_download_url')) {
+        $new_download_url = $updated_document->get_download_url();
+        error_log('Document Library Pro Debug - New download URL: ' . $new_download_url);
+    }
+    
+    wp_die(json_encode(array('success' => true, 'data' => 'PDF replaced successfully')));
+}
+add_action('wp_ajax_replace_pdf_document', 'handle_replace_pdf_document');
+
+/**
+ * Add CSV export functionality to Broken Link Checker plugin
+ */
+function citygov_add_blc_csv_export() {
+    // Only run on the broken link checker admin page
+    if (!isset($_GET['page']) || $_GET['page'] !== 'blc_local') {
+        return;
+    }
+    
+    // Add export button to the admin page
+    add_action('admin_footer', 'citygov_blc_export_button');
+    
+    // Handle CSV export
+    if (isset($_GET['blc_export_csv']) && wp_verify_nonce($_GET['_wpnonce'], 'blc_export_csv')) {
+        citygov_export_blc_csv();
+    }
+}
+add_action('admin_init', 'citygov_add_blc_csv_export');
+
+/**
+ * Add export button to the broken links page
+ */
+function citygov_blc_export_button() {
+    ?>
+    <script type="text/javascript">
+    jQuery(document).ready(function($) {
+        // Add export button to the actions area
+        var exportButton = '<a href="<?php echo wp_nonce_url(admin_url('admin.php?page=blc_local&blc_export_csv=1'), 'blc_export_csv'); ?>" class="button button-secondary" style="margin-left: 10px;">Export to CSV</a>';
+        
+        // Find the actions area and add our button
+        $('.sui-actions-right').append(exportButton);
+    });
+    </script>
+    <?php
+}
+
+/**
+ * Export broken links to CSV
+ */
+function citygov_export_blc_csv() {
+    global $wpdb;
+    
+    // Check user permissions
+    if (!current_user_can('manage_options')) {
+        wp_die('Insufficient permissions');
+    }
+    
+    // Get all broken links with page information
+    $query = "
+        SELECT 
+            l.link_id,
+            l.url,
+            l.final_url,
+            l.http_code,
+            l.status_code,
+            l.status_text,
+            l.broken,
+            l.warning,
+            l.redirect_count,
+            l.last_check,
+            l.last_success,
+            l.check_count,
+            l.request_duration,
+            l.dismissed,
+            l.first_failure,
+            l.log,
+            i.container_id,
+            i.container_type,
+            i.link_text,
+            i.raw_url,
+            p.post_title,
+            p.post_type,
+            p.guid
+        FROM {$wpdb->prefix}blc_links l
+        LEFT JOIN {$wpdb->prefix}blc_instances i ON l.link_id = i.link_id
+        LEFT JOIN {$wpdb->posts} p ON i.container_id = p.ID AND i.container_type = 'post'
+        WHERE l.broken = 1 OR l.warning = 1
+        ORDER BY l.last_check DESC
+    ";
+    
+    $links = $wpdb->get_results($query, ARRAY_A);
+    
+    if (empty($links)) {
+        wp_die('No broken links found to export');
+    }
+    
+    // Set headers for CSV download
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="broken-links-' . date('Y-m-d-H-i-s') . '.csv"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    // Create output stream
+    $output = fopen('php://output', 'w');
+    
+    // Add CSV headers
+    $headers = array(
+        'Link ID',
+        'URL',
+        'Final URL',
+        'HTTP Code',
+        'Status Code',
+        'Status Text',
+        'Broken',
+        'Warning',
+        'Redirect Count',
+        'Last Check',
+        'Last Success',
+        'Check Count',
+        'Request Duration',
+        'Dismissed',
+        'First Failure',
+        'Log',
+        'Page ID',
+        'Page Type',
+        'Page Title',
+        'Page URL',
+        'Link Text',
+        'Raw URL'
+    );
+    
+    fputcsv($output, $headers);
+    
+    // Add data rows
+    foreach ($links as $link) {
+        $row = array(
+            $link['link_id'],
+            $link['url'],
+            $link['final_url'],
+            $link['http_code'],
+            $link['status_code'],
+            $link['status_text'],
+            $link['broken'] ? 'Yes' : 'No',
+            $link['warning'] ? 'Yes' : 'No',
+            $link['redirect_count'],
+            $link['last_check'],
+            $link['last_success'],
+            $link['check_count'],
+            $link['request_duration'],
+            $link['dismissed'] ? 'Yes' : 'No',
+            $link['first_failure'],
+            $link['log'],
+            $link['container_id'] ?: '',
+            $link['container_type'] ?: '',
+            $link['post_title'] ?: '',
+            $link['guid'] ?: '',
+            $link['link_text'] ?: '',
+            $link['raw_url'] ?: ''
+        );
+        
+        fputcsv($output, $row);
+    }
+    
+    fclose($output);
+    exit;
 }
 
 

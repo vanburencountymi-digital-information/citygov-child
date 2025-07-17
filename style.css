@@ -21,8 +21,6 @@ TABLE OF CONTENTS:
    7.1 Similar Posts Section
    7.2 Post Navigation
 8. Document Library Pro Styling
-   8.1 Single Document Page
-9. Department Menu Section Styling
 */
 
 /* ==========================================================================
@@ -2047,5 +2045,178 @@ body.single-dlp_document .dlp-download-button:hover {
     .footer-top-row .foocol,
     .footer-bottom-row .foocol {
         padding: 0 1rem;
+    }
+}  
+
+/* 6.6 PDF Replacement Modal
+   ========================================================================== */
+
+/* Admin button styles */
+.admin-actions {
+    margin: 1rem 0;
+}
+
+.admin-button {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease;
+}
+
+.admin-button:hover {
+    background: #005077;
+    color: #fff;
+    text-decoration: none;
+}
+
+/* PDF Replacement Modal */
+#pdf-replace-modal .modal-content {
+    max-width: 500px;
+    text-align: left;
+}
+
+#pdf-replace-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#pdf-replace-modal .modal-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.25rem;
+}
+
+#pdf-replace-modal .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+#pdf-replace-modal .modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+#pdf-replace-modal .modal-body {
+    margin-bottom: 1rem;
+}
+
+#pdf-replace-modal .form-group {
+    margin-bottom: 1.5rem;
+}
+
+#pdf-replace-modal .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+#pdf-replace-modal .form-group input[type="file"],
+#pdf-replace-modal .form-group input[type="text"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+#pdf-replace-modal .form-group input[type="file"]:focus,
+#pdf-replace-modal .form-group input[type="text"]:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
+}
+
+#pdf-replace-modal .file-info {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+}
+
+#pdf-replace-modal .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+#pdf-replace-modal .submit-btn {
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+#pdf-replace-modal .submit-btn:hover {
+    background: #005077;
+}
+
+#pdf-replace-modal .submit-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+#pdf-replace-modal .cancel-btn {
+    background: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+#pdf-replace-modal .cancel-btn:hover {
+    background: #e0e0e0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #pdf-replace-modal .modal-content {
+        max-width: 90%;
+        margin: 1rem;
+    }
+    
+    #pdf-replace-modal .form-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    #pdf-replace-modal .submit-btn,
+    #pdf-replace-modal .cancel-btn {
+        width: 100%;
+        text-align: center;
     }
 }  
