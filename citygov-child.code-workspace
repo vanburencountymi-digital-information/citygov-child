@@ -1,31 +1,7 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../../plugins/airtable-directory"
-		},
-		{
-			"path": "../citygov"
-		},
-		{
-			"path": "../../plugins/dept-admin-dashboard"
-		},
-		{
-			"path": "../../../../../../AppData/Roaming/npm/node_modules/airtable-mcp-server"
-		},
-		{
-			"path": "../../../../../link-fixing-proj"
-		},
-		{
-			"path": "../../plugins/doc-display-ultimate"
-		},
-		{
-			"path": "../../plugins/filebird"
-		}
-	],
-	"settings": {
-		"powershell.cwd": "citygov-child"
-	}
+    "folders": [
+        {
+            "path": "../../../.."
+        }
+    ]
 }

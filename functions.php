@@ -576,47 +576,22 @@ function my_custom_subpages_shortcode($atts) {
     
     if (!empty($subpages)) {
         foreach ($subpages as $page) {
-            // Check if this subpage has children
-            $has_children = count(get_pages(array('parent' => $page->ID))) > 0;
-            $page_class = $has_children && $atts['accordion_subpages'] ? 'subpage-item has-children' : 'subpage-item';
-            
-            $link = get_permalink($page->ID);
+            $page_class = 'subpage-item';
             $list_pages_html .= '<li class="' . $page_class . '">';
+            $list_pages_html .= '<h4 class="subpage-title"><a href="' . get_permalink($page->ID) . '" title="' . esc_attr($page->post_title) . '">' . $page->post_title . '</a></h4>';
             
-            // Title with dropdown indicator for pages with children
-            if ($has_children && $atts['accordion_subpages']) {
-                $list_pages_html .= '<div class="page-title-wrapper">';
-                $list_pages_html .= '<a href="' . $link . '" title="' . esc_attr($page->post_title) . '">' . $page->post_title . '</a>';
-                $list_pages_html .= '<span class="dropdown-indicator" aria-hidden="true"></span>';
-                $list_pages_html .= '</div>';
-            } else {
-                $list_pages_html .= '<a href="' . $link . '" title="' . esc_attr($page->post_title) . '">' . $page->post_title . '</a>';
-            }
-            
-            // Add nested subpages as accordion if this page has children
-            if ($has_children && $atts['accordion_subpages']) {
-                // Get subpages of this page (second level)
-                $nested_args = array(
-                    'parent' => $page->ID,
-                    'sort_order' => $atts['sort_order'],
-                    'sort_column' => $atts['sort_column'],
-                    'post_type' => $atts['post_type'],
-                    'post_status' => $atts['post_status']
-                );
+            // Optionally show excerpt for subpages
+            if ($atts['show_content'] == 1) {
+                if (!empty($page->post_excerpt)) {
+                    $text_content = $page->post_excerpt;
+                } else {
+                    $text_content = $page->post_content;
+                }
                 
-                $nested_pages = get_pages($nested_args);
-                
-                if (!empty($nested_pages)) {
-                    $list_pages_html .= '<ul class="subpages-accordion">';
-                    
-                    foreach ($nested_pages as $subpage) {
-                        $subpage_link = get_permalink($subpage->ID);
-                        $list_pages_html .= '<li class="nested-subpage-item">';
-                        $list_pages_html .= '<a href="' . $subpage_link . '" title="' . esc_attr($subpage->post_title) . '">' . $subpage->post_title . '</a>';
-                        $list_pages_html .= '</li>';
-                    }
-                    
-                    $list_pages_html .= '</ul>';
+                if (!post_password_required($page)) {
+                    $content = pagelist_unqprfx_parse_content($text_content, $atts['limit_content'], $atts['strip_tags'], $atts['strip_shortcodes'], $atts['more_tag']);
+                    $content = do_shortcode($content);
+                    $list_pages_html .= '<div class="subpage-content">' . $content . '</div>';
                 }
             }
             
@@ -952,12 +927,6 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
     // Check if menu already exists by slug
     $existing_menu = wp_get_nav_menu_object($menu_slug);
     
-    if ($existing_menu && !$force_regenerate) {
-        // Menu exists and we're not forcing regeneration
-        error_log("ensure_department_menu_exists: Found existing menu: {$existing_menu->name} (ID: {$existing_menu->term_id})");
-        return $existing_menu->term_id;
-    }
-    
     // Also check if a menu with the same name exists (in case it was created manually)
     $all_menus = wp_get_nav_menus();
     $existing_menu_by_name = null;
@@ -968,51 +937,70 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
         }
     }
     
-    if ($existing_menu_by_name && !$force_regenerate) {
-        // Menu with same name exists, use it
-        error_log("ensure_department_menu_exists: Found existing menu by name: {$existing_menu_by_name->name} (ID: {$existing_menu_by_name->term_id})");
-        return $existing_menu_by_name->term_id;
+    // Determine which existing menu to use (if any)
+    $menu_to_update = null;
+    if ($existing_menu) {
+        $menu_to_update = $existing_menu;
+    } elseif ($existing_menu_by_name) {
+        $menu_to_update = $existing_menu_by_name;
     }
     
-    // If menu exists and we're forcing regeneration, delete it first
-    if ($existing_menu && $force_regenerate) {
-        error_log("ensure_department_menu_exists: Deleting existing menu for regeneration: {$existing_menu->name}");
-        wp_delete_nav_menu($existing_menu->term_id);
-    }
-    
-    if ($existing_menu_by_name && $force_regenerate) {
-        error_log("ensure_department_menu_exists: Deleting existing menu by name for regeneration: {$existing_menu_by_name->name}");
-        wp_delete_nav_menu($existing_menu_by_name->term_id);
-    }
-    
-    // Create new menu with the user-friendly name as the slug initially
-    // This ensures the display name starts correctly
-    error_log("ensure_department_menu_exists: Creating new menu with name: {$menu_name}");
-    $menu_id = wp_create_nav_menu($menu_name);
-    if (is_wp_error($menu_id)) {
-        error_log("ensure_department_menu_exists: Failed to create menu for department {$dept_id}: " . $menu_id->get_error_message());
-        return false;
-    }
-    
-    error_log("ensure_department_menu_exists: Successfully created menu with ID: {$menu_id}");
-    
-    // Now update the slug to our desired format while keeping the name
-    $menu_object = wp_get_nav_menu_object($menu_id);
-    if ($menu_object) {
-        // Update the term to have our custom slug while keeping the name
-        $update_result = wp_update_term($menu_id, 'nav_menu', array(
-            'name' => $menu_name,
-            'slug' => $menu_slug
-        ));
-        
-        if (is_wp_error($update_result)) {
-            error_log("ensure_department_menu_exists: Failed to update menu slug: " . $update_result->get_error_message());
-        } else {
-            error_log("ensure_department_menu_exists: Successfully updated menu slug to: {$menu_slug}");
+    if ($menu_to_update && !$force_regenerate) {
+        // Menu exists and we're not forcing regeneration, but we should still update it
+        error_log("ensure_department_menu_exists: Found existing menu: {$menu_to_update->name} (ID: {$menu_to_update->term_id}) - will update items");
+        $menu_id = $menu_to_update->term_id;
+    } else {
+        // Need to create a new menu or force regenerate
+        if ($menu_to_update && $force_regenerate) {
+            error_log("ensure_department_menu_exists: Deleting existing menu for regeneration: {$menu_to_update->name}");
+            wp_delete_nav_menu($menu_to_update->term_id);
         }
+        
+        // Create new menu with the user-friendly name as the slug initially
+        // This ensures the display name starts correctly
+        error_log("ensure_department_menu_exists: Creating new menu with name: {$menu_name}");
+        $menu_id = wp_create_nav_menu($menu_name);
+        if (is_wp_error($menu_id)) {
+            error_log("ensure_department_menu_exists: Failed to create menu for department {$dept_id}: " . $menu_id->get_error_message());
+            return false;
+        }
+        
+        error_log("ensure_department_menu_exists: Successfully created menu with ID: {$menu_id}");
+        
+        // Now update the slug to our desired format while keeping the name
+        $menu_object = wp_get_nav_menu_object($menu_id);
+        if ($menu_object) {
+            // Update the term to have our custom slug while keeping the name
+            $update_result = wp_update_term($menu_id, 'nav_menu', array(
+                'name' => $menu_name,
+                'slug' => $menu_slug
+            ));
+            
+            if (is_wp_error($update_result)) {
+                error_log("ensure_department_menu_exists: Failed to update menu slug: " . $update_result->get_error_message());
+            } else {
+                error_log("ensure_department_menu_exists: Successfully updated menu slug to: {$menu_slug}");
+            }
+        }
+        
+        error_log("ensure_department_menu_exists: Created menu: {$menu_name} (ID: {$menu_id})");
     }
     
-    error_log("ensure_department_menu_exists: Created menu: {$menu_name} (ID: {$menu_id})");
+    // Now we have a menu_id (either existing or new) - let's update/add the menu items
+    error_log("ensure_department_menu_exists: Updating menu items for menu ID: {$menu_id}");
+    
+    // Get existing menu items to check for duplicates
+    $existing_items = wp_get_nav_menu_items($menu_id);
+    $existing_item_ids = array();
+    if (!empty($existing_items)) {
+        error_log("ensure_department_menu_exists: Found " . count($existing_items) . " existing menu items");
+        foreach ($existing_items as $item) {
+            if ($item->object === 'page') {
+                $existing_item_ids[] = $item->object_id;
+            }
+        }
+        error_log("ensure_department_menu_exists: Existing page IDs: " . implode(', ', $existing_item_ids));
+    }
     
     // Add some common department-specific menu items FIRST
     $additional_items = array(
@@ -1036,20 +1024,33 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
     
     $additional_items_created = 0;
     foreach ($additional_items as $item) {
-        $additional_item_data = array(
-            'menu-item-title' => $item['title'],
-            'menu-item-url' => $item['url'],
-            'menu-item-type' => $item['type'],
-            'menu-item-status' => 'publish'
-        );
-        
-        if (isset($item['classes'])) {
-            $additional_item_data['menu-item-classes'] = implode(' ', $item['classes']);
+        // Check if this additional item already exists (by URL)
+        $item_exists = false;
+        foreach ($existing_items as $existing_item) {
+            if ($existing_item->url === $item['url']) {
+                $item_exists = true;
+                error_log("ensure_department_menu_exists: Additional item '{$item['title']}' already exists");
+                break;
+            }
         }
         
-        $additional_item_id = wp_update_nav_menu_item($menu_id, 0, $additional_item_data);
-        if ($additional_item_id && !is_wp_error($additional_item_id)) {
-            $additional_items_created++;
+        if (!$item_exists) {
+            $additional_item_data = array(
+                'menu-item-title' => $item['title'],
+                'menu-item-url' => $item['url'],
+                'menu-item-type' => $item['type'],
+                'menu-item-status' => 'publish'
+            );
+            
+            if (isset($item['classes'])) {
+                $additional_item_data['menu-item-classes'] = implode(' ', $item['classes']);
+            }
+            
+            $additional_item_id = wp_update_nav_menu_item($menu_id, 0, $additional_item_data);
+            if ($additional_item_id && !is_wp_error($additional_item_id)) {
+                $additional_items_created++;
+                error_log("ensure_department_menu_exists: Added additional item '{$item['title']}'");
+            }
         }
     }
     
@@ -1072,6 +1073,12 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
     
     if (!empty($subpages)) {
         foreach ($subpages as $page) {
+            // Check if this page already exists in the menu
+            if (in_array($page->ID, $existing_item_ids)) {
+                error_log("ensure_department_menu_exists: Page '{$page->post_title}' (ID: {$page->ID}) already exists in menu, skipping");
+                continue;
+            }
+            
             // Check if this subpage has children
             $has_children = count(get_pages(array('parent' => $page->ID))) > 0;
             
@@ -1089,6 +1096,7 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
             
             if ($parent_menu_item_id && !is_wp_error($parent_menu_item_id)) {
                 $menu_items_created++;
+                error_log("ensure_department_menu_exists: Added page '{$page->post_title}' (ID: {$page->ID})");
                 
                 // If this page has children, add them as sub-menu items
                 if ($has_children) {
@@ -1104,6 +1112,12 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
                     
                     if (!empty($nested_pages)) {
                         foreach ($nested_pages as $subpage) {
+                            // Check if this nested page already exists in the menu
+                            if (in_array($subpage->ID, $existing_item_ids)) {
+                                error_log("ensure_department_menu_exists: Nested page '{$subpage->post_title}' (ID: {$subpage->ID}) already exists in menu, skipping");
+                                continue;
+                            }
+                            
                             $submenu_item_data = array(
                                 'menu-item-title' => $subpage->post_title,
                                 'menu-item-object' => 'page',
@@ -1117,6 +1131,7 @@ function ensure_department_menu_exists($department_root_id, $force_regenerate = 
                             $submenu_item_id = wp_update_nav_menu_item($menu_id, 0, $submenu_item_data);
                             if ($submenu_item_id && !is_wp_error($submenu_item_id)) {
                                 $menu_items_created++;
+                                error_log("ensure_department_menu_exists: Added nested page '{$subpage->post_title}' (ID: {$subpage->ID})");
                             }
                         }
                     }
@@ -1425,6 +1440,39 @@ function department_menu_generator_page() {
         $message = "<div class='notice notice-success'><p>Reset and regenerate completed: {$deleted_count} menus deleted, {$success_count} out of {$total_count} department menus regenerated successfully!</p></div>";
     }
     
+    if (isset($_POST['regenerate_single_menu'])) {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['regenerate_menu_nonce'], 'regenerate_single_menu')) {
+            $message = "<div class='notice notice-error'><p>Security check failed. Please try again.</p></div>";
+        } else {
+            $page_id = intval($_POST['department_page_id']);
+            $force_regenerate = isset($_POST['force_regenerate_single']);
+            
+            if ($page_id > 0) {
+                $page = get_post($page_id);
+                if ($page && $page->post_type === 'page') {
+                    $dept_id = get_post_meta($page_id, 'department_id', true);
+                    if (!empty($dept_id)) {
+                        $menu_id = ensure_department_menu_exists($page_id, $force_regenerate);
+                        
+                        if ($menu_id !== false) {
+                            $action_text = $force_regenerate ? 'regenerated' : 'updated';
+                            $message = "<div class='notice notice-success'><p>Successfully {$action_text} menu for department: <strong>{$page->post_title}</strong> (Menu ID: {$menu_id})</p></div>";
+                        } else {
+                            $message = "<div class='notice notice-error'><p>Failed to regenerate menu for department: <strong>{$page->post_title}</strong></p></div>";
+                        }
+                    } else {
+                        $message = "<div class='notice notice-error'><p>Selected page does not have a department_id set.</p></div>";
+                    }
+                } else {
+                    $message = "<div class='notice notice-error'><p>Invalid page selected.</p></div>";
+                }
+            } else {
+                $message = "<div class='notice notice-error'><p>Please select a department from the dropdown.</p></div>";
+            }
+        }
+    }
+    
     // Get current department menus for display
     $current_menus = list_all_department_menus();
     
@@ -1628,11 +1676,140 @@ function department_menu_generator_page() {
         
         <div class="card">
             <h2>Manual Generation</h2>
-            <p>You can also generate a menu for a specific department by calling:</p>
+            <p>Select a department from the dropdown below and click "Regenerate Menu" to update its navigation menu. This is useful when you've made changes to the department's subpages.</p>
+            
+            <?php
+            // Get all department pages for the dropdown
+            $department_args = array(
+                'post_type' => 'page',
+                'post_status' => 'publish',
+                'meta_query' => array(
+                    array(
+                        'key' => 'department_id',
+                        'compare' => 'EXISTS'
+                    )
+                ),
+                'posts_per_page' => -1,
+                'orderby' => 'title',
+                'order' => 'ASC'
+            );
+            $department_pages = get_posts($department_args);
+            ?>
+            
+            <?php if (!empty($department_pages)): ?>
+                <form method="post" id="manual-menu-regeneration-form">
+                    <?php wp_nonce_field('regenerate_single_menu', 'regenerate_menu_nonce'); ?>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="department_page_id">Select Department:</label>
+                            </th>
+                            <td>
+                                <select name="department_page_id" id="department_page_id" style="min-width: 300px;">
+                                    <option value="">-- Select a Department --</option>
+                                    <?php foreach ($department_pages as $page): ?>
+                                        <?php 
+                                        $dept_id = get_post_meta($page->ID, 'department_id', true);
+                                        $menu_exists = get_department_menu($dept_id);
+                                        $menu_status = $menu_exists ? ' (Menu exists)' : ' (No menu)';
+                                        ?>
+                                        <option value="<?php echo esc_attr($page->ID); ?>" data-dept-id="<?php echo esc_attr($dept_id); ?>">
+                                            <?php echo esc_html($page->post_title); ?> - ID: <?php echo esc_html($page->ID); ?> - Dept: <?php echo esc_html($dept_id); ?><?php echo esc_html($menu_status); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="force_regenerate_single">Force Regenerate:</label>
+                            </th>
+                            <td>
+                                <input type="checkbox" name="force_regenerate_single" id="force_regenerate_single" value="1">
+                                <label for="force_regenerate_single">Delete existing menu and recreate from scratch</label>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <p>
+                        <button type="submit" name="regenerate_single_menu" class="button button-primary" id="regenerate-single-menu-btn">
+                            Regenerate Menu
+                        </button>
+                        <span id="regeneration-status" style="margin-left: 10px; display: none;"></span>
+                    </p>
+                </form>
+                
+                <div id="regeneration-results" style="margin-top: 20px; display: none;"></div>
+            <?php else: ?>
+                <p><em>No department pages found. Make sure you have pages with a <code>department_id</code> meta field set.</em></p>
+            <?php endif; ?>
+            
+            <hr style="margin: 20px 0;">
+            <p><strong>Programmatic Usage:</strong> You can also generate a menu for a specific department by calling:</p>
             <code>ensure_department_menu_exists($page_id);</code>
             <p>Where <code>$page_id</code> is the ID of the department root page.</p>
         </div>
     </div>
+    
+    <script type="text/javascript">
+    jQuery(document).ready(function($) {
+        // Handle manual menu regeneration form
+        $('#manual-menu-regeneration-form').on('submit', function(e) {
+            var selectedDept = $('#department_page_id').val();
+            if (!selectedDept) {
+                e.preventDefault();
+                alert('Please select a department from the dropdown.');
+                return false;
+            }
+            
+            // Show loading state
+            $('#regenerate-single-menu-btn').prop('disabled', true).text('Regenerating...');
+            $('#regeneration-status').show().html('<span style="color: blue;">Processing...</span>');
+        });
+        
+        // Update status when department is selected
+        $('#department_page_id').on('change', function() {
+            var selectedOption = $(this).find('option:selected');
+            var deptId = selectedOption.data('dept-id');
+            var pageTitle = selectedOption.text();
+            
+            if (deptId) {
+                $('#regeneration-status').show().html('<span style="color: green;">Ready to regenerate menu for: ' + pageTitle + '</span>');
+            } else {
+                $('#regeneration-status').hide();
+            }
+        });
+        
+        // Add AJAX alternative (optional - can be used for future enhancements)
+        function regenerateMenuAjax(pageId, forceRegenerate) {
+            var data = {
+                action: 'regenerate_department_menu',
+                page_id: pageId,
+                force_regenerate: forceRegenerate,
+                regenerate_menu_nonce: $('#regenerate_menu_nonce').val()
+            };
+            
+            $.post(ajaxurl, data, function(response) {
+                try {
+                    var result = JSON.parse(response);
+                    if (result.success) {
+                        $('#regeneration-status').html('<span style="color: green;">✓ ' + result.message + '</span>');
+                    } else {
+                        $('#regeneration-status').html('<span style="color: red;">✗ ' + result.message + '</span>');
+                    }
+                } catch (e) {
+                    $('#regeneration-status').html('<span style="color: red;">✗ Error processing response</span>');
+                }
+                
+                // Reset button
+                $('#regenerate-single-menu-btn').prop('disabled', false).text('Regenerate Menu');
+            }).fail(function() {
+                $('#regeneration-status').html('<span style="color: red;">✗ Network error occurred</span>');
+                $('#regenerate-single-menu-btn').prop('disabled', false).text('Regenerate Menu');
+            });
+        }
+    });
+    </script>
     <?php
 }
 
@@ -1917,6 +2094,49 @@ function handle_replace_pdf_document() {
 add_action('wp_ajax_replace_pdf_document', 'handle_replace_pdf_document');
 
 /**
+ * AJAX handler for regenerating individual department menus
+ */
+function handle_regenerate_department_menu() {
+    // Check nonce for security
+    if (!wp_verify_nonce($_POST['regenerate_menu_nonce'], 'regenerate_single_menu')) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Security check failed')));
+    }
+    
+    // Check user permissions
+    if (!current_user_can('manage_options')) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Insufficient permissions')));
+    }
+    
+    $page_id = intval($_POST['page_id']);
+    $force_regenerate = isset($_POST['force_regenerate']) && $_POST['force_regenerate'] === 'true';
+    
+    if ($page_id <= 0) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Invalid page ID')));
+    }
+    
+    $page = get_post($page_id);
+    if (!$page || $page->post_type !== 'page') {
+        wp_die(json_encode(array('success' => false, 'message' => 'Invalid page')));
+    }
+    
+    $dept_id = get_post_meta($page_id, 'department_id', true);
+    if (empty($dept_id)) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Page does not have a department_id set')));
+    }
+    
+    $menu_id = ensure_department_menu_exists($page_id, $force_regenerate);
+    
+    if ($menu_id !== false) {
+        $action_text = $force_regenerate ? 'regenerated' : 'updated';
+        $message = "Successfully {$action_text} menu for department: {$page->post_title} (Menu ID: {$menu_id})";
+        wp_die(json_encode(array('success' => true, 'message' => $message, 'menu_id' => $menu_id)));
+    } else {
+        wp_die(json_encode(array('success' => false, 'message' => "Failed to regenerate menu for department: {$page->post_title}")));
+    }
+}
+add_action('wp_ajax_regenerate_department_menu', 'handle_regenerate_department_menu');
+
+/**
  * Add CSV export functionality to Broken Link Checker plugin
  */
 function citygov_add_blc_csv_export() {
@@ -2072,5 +2292,348 @@ function citygov_export_blc_csv() {
     fclose($output);
     exit;
 }
+
+/**
+ * Add functionality to detect missing subpages on admin menu page
+ */
+function add_department_menu_missing_pages_notice() {
+    global $pagenow;
+    
+    // Only run on the nav-menus.php page
+    if ($pagenow !== 'nav-menus.php') {
+        return;
+    }
+    
+    // Get the current menu being edited
+    $nav_menu_selected_id = isset($_REQUEST['menu']) ? (int) $_REQUEST['menu'] : 0;
+    if (!$nav_menu_selected_id) {
+        return;
+    }
+    
+    // Check if this is a department menu
+    $menu = wp_get_nav_menu_object($nav_menu_selected_id);
+    if (!$menu) {
+        return;
+    }
+    
+    // Check if this is a department menu by slug pattern
+    if (strpos($menu->slug, 'department_menu_') !== 0) {
+        return;
+    }
+    
+    // Extract department ID from menu slug
+    $dept_id = null;
+    if (preg_match('/department_menu_.*_(\d+)$/', $menu->slug, $matches)) {
+        $dept_id = $matches[1];
+    }
+    
+    if (!$dept_id) {
+        return;
+    }
+    
+    // Find the department root page
+    $department_pages = get_posts(array(
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'meta_query' => array(
+            array(
+                'key' => 'department_id',
+                'value' => $dept_id,
+                'compare' => '='
+            )
+        ),
+        'posts_per_page' => 1
+    ));
+    
+    if (empty($department_pages)) {
+        return;
+    }
+    
+    $department_root = $department_pages[0];
+    
+    // Get current menu items
+    $menu_items = wp_get_nav_menu_items($nav_menu_selected_id);
+    $existing_page_ids = array();
+    foreach ($menu_items as $item) {
+        if ($item->object === 'page') {
+            $existing_page_ids[] = $item->object_id;
+        }
+    }
+    
+    // Get all subpages of the department
+    $subpages = get_pages(array(
+        'parent' => $department_root->ID,
+        'sort_order' => 'ASC',
+        'sort_column' => 'menu_order, post_title',
+        'hierarchical' => 0,
+        'post_type' => 'page',
+        'post_status' => 'publish'
+    ));
+    
+    if ($subpages === false) {
+        $subpages = array();
+    }
+    
+    // Find missing subpages
+    $missing_subpages = array();
+    foreach ($subpages as $subpage) {
+        if (!in_array($subpage->ID, $existing_page_ids)) {
+            $missing_subpages[] = $subpage;
+        }
+    }
+    
+    // Also check for missing nested subpages
+    foreach ($subpages as $subpage) {
+        $nested_pages = get_pages(array(
+            'parent' => $subpage->ID,
+            'sort_order' => 'ASC',
+            'sort_column' => 'menu_order, post_title',
+            'post_type' => 'page',
+            'post_status' => 'publish'
+        ));
+        
+        if ($nested_pages !== false) {
+            foreach ($nested_pages as $nested_page) {
+                if (!in_array($nested_page->ID, $existing_page_ids)) {
+                    $missing_subpages[] = $nested_page;
+                }
+            }
+        }
+    }
+    
+    // If there are missing subpages, show notice
+    if (!empty($missing_subpages)) {
+        add_action('admin_notices', function() use ($missing_subpages, $nav_menu_selected_id, $department_root) {
+            $missing_count = count($missing_subpages);
+            $missing_titles = array();
+            foreach ($missing_subpages as $page) {
+                $missing_titles[] = $page->post_title;
+            }
+            
+            $nonce = wp_create_nonce('add_missing_subpages');
+            $add_url = admin_url('admin-ajax.php?action=add_missing_subpages&menu_id=' . $nav_menu_selected_id . '&_wpnonce=' . $nonce);
+            
+            ?>
+            <div class="notice notice-warning is-dismissible department-menu-notice">
+                <p>
+                    <strong>Department Menu Update Available</strong><br>
+                    Found <?php echo $missing_count; ?> new subpage<?php echo $missing_count > 1 ? 's' : ''; ?> for 
+                    <strong><?php echo esc_html($department_root->post_title); ?></strong> that are not in this menu:
+                    <em><?php echo esc_html(implode(', ', $missing_titles)); ?></em>
+                </p>
+                <p>
+                    <a href="<?php echo esc_url($add_url); ?>" class="button button-primary">
+                        Add Missing Subpages to Menu
+                    </a>
+                    <a href="<?php echo esc_url(admin_url('nav-menus.php?menu=' . $nav_menu_selected_id)); ?>" class="button">
+                        Continue Editing Menu
+                    </a>
+                </p>
+            </div>
+            <?php
+        });
+    }
+}
+add_action('admin_init', 'add_department_menu_missing_pages_notice');
+
+/**
+ * AJAX handler for adding missing subpages to department menu
+ */
+function handle_add_missing_subpages() {
+    // Check nonce for security
+    if (!wp_verify_nonce($_GET['_wpnonce'], 'add_missing_subpages')) {
+        wp_die('Security check failed');
+    }
+    
+    // Check user permissions
+    if (!current_user_can('edit_theme_options')) {
+        wp_die('Insufficient permissions');
+    }
+    
+    $menu_id = intval($_GET['menu_id']);
+    if (!$menu_id) {
+        wp_die('Invalid menu ID');
+    }
+    
+    $menu = wp_get_nav_menu_object($menu_id);
+    if (!$menu) {
+        wp_die('Menu not found');
+    }
+    
+    // Extract department ID from menu slug
+    $dept_id = null;
+    if (preg_match('/department_menu_.*_(\d+)$/', $menu->slug, $matches)) {
+        $dept_id = $matches[1];
+    }
+    
+    if (!$dept_id) {
+        wp_die('Not a department menu');
+    }
+    
+    // Find the department root page
+    $department_pages = get_posts(array(
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'meta_query' => array(
+            array(
+                'key' => 'department_id',
+                'value' => $dept_id,
+                'compare' => '='
+            )
+        ),
+        'posts_per_page' => 1
+    ));
+    
+    if (empty($department_pages)) {
+        wp_die('Department not found');
+    }
+    
+    $department_root = $department_pages[0];
+    
+    // Get current menu items
+    $menu_items = wp_get_nav_menu_items($menu_id);
+    $existing_page_ids = array();
+    $parent_menu_items = array(); // Track parent menu items for nested pages
+    
+    foreach ($menu_items as $item) {
+        if ($item->object === 'page') {
+            $existing_page_ids[] = $item->object_id;
+            // Store parent menu items for nested pages
+            $parent_menu_items[$item->object_id] = $item->ID;
+        }
+    }
+    
+    // Get all subpages of the department
+    $subpages = get_pages(array(
+        'parent' => $department_root->ID,
+        'sort_order' => 'ASC',
+        'sort_column' => 'menu_order, post_title',
+        'hierarchical' => 0,
+        'post_type' => 'page',
+        'post_status' => 'publish'
+    ));
+    
+    if ($subpages === false) {
+        $subpages = array();
+    }
+    
+    $added_count = 0;
+    $added_items = array();
+    
+    // Add missing subpages
+    foreach ($subpages as $subpage) {
+        if (!in_array($subpage->ID, $existing_page_ids)) {
+            $menu_item_data = array(
+                'menu-item-title' => $subpage->post_title,
+                'menu-item-object' => 'page',
+                'menu-item-object-id' => $subpage->ID,
+                'menu-item-type' => 'post_type',
+                'menu-item-status' => 'publish',
+                'menu-item-url' => get_permalink($subpage->ID)
+            );
+            
+            $menu_item_id = wp_update_nav_menu_item($menu_id, 0, $menu_item_data);
+            if ($menu_item_id && !is_wp_error($menu_item_id)) {
+                $added_count++;
+                $added_items[] = $subpage->post_title;
+                $parent_menu_items[$subpage->ID] = $menu_item_id; // Store for nested pages
+            }
+        }
+    }
+    
+    // Add missing nested subpages
+    foreach ($subpages as $subpage) {
+        $nested_pages = get_pages(array(
+            'parent' => $subpage->ID,
+            'sort_order' => 'ASC',
+            'sort_column' => 'menu_order, post_title',
+            'post_type' => 'page',
+            'post_status' => 'publish'
+        ));
+        
+        if ($nested_pages !== false) {
+            foreach ($nested_pages as $nested_page) {
+                if (!in_array($nested_page->ID, $existing_page_ids)) {
+                    $parent_menu_item_id = isset($parent_menu_items[$subpage->ID]) ? $parent_menu_items[$subpage->ID] : 0;
+                    
+                    $menu_item_data = array(
+                        'menu-item-title' => $nested_page->post_title,
+                        'menu-item-object' => 'page',
+                        'menu-item-object-id' => $nested_page->ID,
+                        'menu-item-type' => 'post_type',
+                        'menu-item-status' => 'publish',
+                        'menu-item-url' => get_permalink($nested_page->ID),
+                        'menu-item-parent-id' => $parent_menu_item_id
+                    );
+                    
+                    $menu_item_id = wp_update_nav_menu_item($menu_id, 0, $menu_item_data);
+                    if ($menu_item_id && !is_wp_error($menu_item_id)) {
+                        $added_count++;
+                        $added_items[] = $nested_page->post_title;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Redirect back to menu page with success message
+    $redirect_url = admin_url('nav-menus.php?menu=' . $menu_id . '&subpages_added=' . $added_count . '&added_items=' . urlencode(implode(', ', $added_items)));
+    wp_redirect($redirect_url);
+    exit;
+}
+add_action('wp_ajax_add_missing_subpages', 'handle_add_missing_subpages');
+
+/**
+ * Show success message after adding missing subpages
+ */
+function show_subpages_added_notice() {
+    if (isset($_GET['subpages_added']) && $_GET['subpages_added'] > 0) {
+        $added_count = intval($_GET['subpages_added']);
+        $added_items = isset($_GET['added_items']) ? urldecode($_GET['added_items']) : '';
+        
+        ?>
+        <div class="notice notice-success is-dismissible">
+            <p>
+                <strong>Success!</strong> Added <?php echo $added_count; ?> new subpage<?php echo $added_count > 1 ? 's' : ''; ?> to the menu.
+                <?php if ($added_items): ?>
+                    <br>Added: <em><?php echo esc_html($added_items); ?></em>
+                <?php endif; ?>
+            </p>
+        </div>
+        <?php
+    }
+}
+add_action('admin_notices', 'show_subpages_added_notice');
+
+/**
+ * Add CSS styling for department menu notices
+ */
+function add_department_menu_notice_styles() {
+    global $pagenow;
+    
+    // Only add styles on the nav-menus.php page
+    if ($pagenow !== 'nav-menus.php') {
+        return;
+    }
+    
+    ?>
+    <style type="text/css">
+    .department-menu-notice {
+        border-left-color: #ffb900 !important;
+        background-color: #fff8e5;
+    }
+    .department-menu-notice .button {
+        margin-right: 10px;
+    }
+    .department-menu-notice p {
+        margin: 0.5em 0;
+    }
+    .department-menu-notice strong {
+        color: #d63638;
+    }
+    </style>
+    <?php
+}
+add_action('admin_head', 'add_department_menu_notice_styles');
 
 
