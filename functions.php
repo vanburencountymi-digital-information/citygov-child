@@ -2636,4 +2636,622 @@ function add_department_menu_notice_styles() {
 }
 add_action('admin_head', 'add_department_menu_notice_styles');
 
+/**
+ * Add admin page for fixing invalid HTML blocks
+ */
+function add_html_block_fixer_page() {
+    add_management_page(
+        'Fix Invalid HTML Blocks',
+        'Fix HTML Blocks',
+        'manage_options',
+        'fix-html-blocks',
+        'html_block_fixer_page'
+    );
+}
+add_action('admin_menu', 'add_html_block_fixer_page');
+
+/**
+ * Admin page for fixing invalid HTML blocks
+ */
+function html_block_fixer_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die('You do not have sufficient permissions to access this page.');
+    }
+    
+    $message = '';
+    $results = array();
+    
+    if (isset($_POST['fix_html_blocks'])) {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['fix_html_nonce'], 'fix_html_blocks')) {
+            $message = "<div class='notice notice-error'><p>Security check failed. Please try again.</p></div>";
+        } else {
+            $dry_run = isset($_POST['dry_run']);
+            $post_types = isset($_POST['post_types']) ? $_POST['post_types'] : array('post', 'page');
+            $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 0;
+            
+            $results = fix_invalid_html_blocks($dry_run, $post_types, $limit);
+            
+            if ($dry_run) {
+                $message = "<div class='notice notice-info'><p>Dry run completed: Found {$results['found_issues']} posts with HTML issues that would be fixed.</p></div>";
+            } else {
+                $message = "<div class='notice notice-success'><p>Successfully fixed {$results['fixed_count']} out of {$results['total_count']} posts!</p></div>";
+            }
+        }
+    }
+    
+    if (isset($_POST['fix_single_page_html'])) {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['fix_single_page_nonce'], 'fix_single_page_html')) {
+            $message = "<div class='notice notice-error'><p>Security check failed. Please try again.</p></div>";
+        } else {
+            $page_id = intval($_POST['single_page_id']);
+            $dry_run = isset($_POST['single_page_dry_run']);
+            
+            if ($page_id > 0) {
+                $single_results = fix_single_page_html_blocks($page_id, $dry_run);
+                
+                if ($dry_run) {
+                    $message = "<div class='notice notice-info'><p>Single page dry run completed: " . ($single_results['issues_found'] > 0 ? "Found {$single_results['issues_found']} HTML issues that would be fixed." : "No HTML issues found.") . "</p></div>";
+                } else {
+                    $message = "<div class='notice notice-success'><p>Successfully fixed HTML issues on the selected page!</p></div>";
+                }
+                
+                $results = $single_results;
+            } else {
+                $message = "<div class='notice notice-error'><p>Please select a page to test.</p></div>";
+            }
+        }
+    }
+    
+    ?>
+    <div class="wrap">
+        <h1>Fix Invalid HTML Blocks</h1>
+        
+        <div class="card">
+            <h2>About This Tool</h2>
+            <p>This tool fixes common HTML nesting issues that cause Gutenberg block validation errors, such as:</p>
+            <ul>
+                <li><code>&lt;p&gt;&lt;h2&gt;Heading&lt;/h2&gt;&lt;/p&gt;</code> → <code>&lt;h2&gt;Heading&lt;/h2&gt;</code></li>
+                <li><code>&lt;p&gt;&lt;ul&gt;...&lt;/ul&gt;&lt;/p&gt;</code> → <code>&lt;ul&gt;...&lt;/ul&gt;</code></li>
+                <li><code>&lt;p&gt;&lt;div&gt;...&lt;/div&gt;&lt;/p&gt;</code> → <code>&lt;div&gt;...&lt;/div&gt;</code></li>
+                <li><code>&lt;p&gt;&lt;img&gt;&lt;/p&gt;</code> → <code>&lt;img&gt;</code></li>
+            </ul>
+            <p><strong>⚠️ Warning:</strong> Always backup your database before running this tool!</p>
+        </div>
+        
+        <?php if ($message): ?>
+            <?php echo $message; ?>
+        <?php endif; ?>
+        
+        <div class="card">
+            <h2>Fix Invalid HTML Blocks</h2>
+            
+            <form method="post">
+                <?php wp_nonce_field('fix_html_blocks', 'fix_html_nonce'); ?>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="dry_run">Dry Run:</label>
+                        </th>
+                        <td>
+                            <input type="checkbox" name="dry_run" id="dry_run" value="1" checked>
+                            <label for="dry_run">Preview changes without making them (recommended for first run)</label>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">
+                            <label>Post Types to Process:</label>
+                        </th>
+                        <td>
+                            <?php
+                            $post_types = get_post_types(array('public' => true), 'objects');
+                            $selected_types = array('post', 'page');
+                            
+                            foreach ($post_types as $post_type) {
+                                $checked = in_array($post_type->name, $selected_types) ? 'checked' : '';
+                                ?>
+                                <label style="display: block; margin-bottom: 5px;">
+                                    <input type="checkbox" name="post_types[]" value="<?php echo esc_attr($post_type->name); ?>" <?php echo $checked; ?>>
+                                    <?php echo esc_html($post_type->labels->name); ?> (<?php echo esc_html($post_type->name); ?>)
+                                </label>
+                                <?php
+                            }
+                            ?>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">
+                            <label for="limit">Limit:</label>
+                        </th>
+                        <td>
+                            <input type="number" name="limit" id="limit" value="0" min="0" style="width: 100px;">
+                            <label for="limit">Number of posts to process (0 = all posts)</label>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p>
+                    <input type="submit" name="fix_html_blocks" class="button button-primary" value="Fix Invalid HTML Blocks">
+                </p>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>Test on Single Page</h2>
+            <p>Select a specific page to test the HTML fixes on. This is useful for testing before running on all posts.</p>
+            
+            <form method="post">
+                <?php wp_nonce_field('fix_single_page_html', 'fix_single_page_nonce'); ?>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="single_page_id">Select Page:</label>
+                        </th>
+                        <td>
+                            <select name="single_page_id" id="single_page_id" style="min-width: 300px;">
+                                <option value="">-- Select a Page --</option>
+                                <?php
+                                // Get all published pages and posts
+                                $all_posts = get_posts(array(
+                                    'post_type' => array('post', 'page'),
+                                    'post_status' => 'publish',
+                                    'posts_per_page' => -1,
+                                    'orderby' => 'title',
+                                    'order' => 'ASC'
+                                ));
+                                
+                                foreach ($all_posts as $post) {
+                                    $post_type_label = $post->post_type === 'post' ? 'Post' : 'Page';
+                                    $selected = '';
+                                    if (isset($_POST['single_page_id']) && $_POST['single_page_id'] == $post->ID) {
+                                        $selected = 'selected';
+                                    }
+                                    ?>
+                                    <option value="<?php echo esc_attr($post->ID); ?>" <?php echo $selected; ?>>
+                                        <?php echo esc_html($post->post_title); ?> (<?php echo $post_type_label; ?> ID: <?php echo $post->ID; ?>)
+                                    </option>
+                                    <?php
+                                }
+                                ?>
+                            </select>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">
+                            <label for="single_page_dry_run">Dry Run:</label>
+                        </th>
+                        <td>
+                            <input type="checkbox" name="single_page_dry_run" id="single_page_dry_run" value="1" checked>
+                            <label for="single_page_dry_run">Preview changes without making them</label>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p>
+                    <input type="submit" name="fix_single_page_html" class="button button-secondary" value="Test HTML Fixes on Selected Page">
+                </p>
+            </form>
+        </div>
+        
+        <?php if (!empty($results) && isset($results['details'])): ?>
+            <div class="card">
+                <h2>Results</h2>
+                
+                <?php if (count($results['details']) === 1 && isset($_POST['fix_single_page_html'])): ?>
+                    <!-- Single page preview with before/after -->
+                    <?php foreach ($results['details'] as $detail): ?>
+                        <h3><?php echo esc_html($detail['title']); ?> (<?php echo esc_html($detail['post_type']); ?> ID: <?php echo esc_html($detail['post_id']); ?>)</h3>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <strong>Issues Found:</strong> <?php echo esc_html($detail['issues_found']); ?>
+                            <br>
+                            <strong>Status:</strong> 
+                            <?php if ($detail['status'] === 'fixed'): ?>
+                                <span style="color: green;">✓ Fixed</span>
+                            <?php elseif ($detail['status'] === 'no_issues'): ?>
+                                <span style="color: blue;">No Issues</span>
+                            <?php elseif ($detail['status'] === 'error'): ?>
+                                <span style="color: red;">✗ Error</span>
+                            <?php else: ?>
+                                <span style="color: orange;">Preview</span>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <?php if ($detail['original_content'] !== $detail['fixed_content']): ?>
+                            <div style="display: flex; gap: 20px; margin-top: 20px;">
+                                <div style="flex: 1; border: 1px solid #ddd; padding: 15px; background: #f9f9f9;">
+                                    <h4 style="margin-top: 0; color: #d63638;">Before (Original Content)</h4>
+                                    <div style="background: white; padding: 10px; border: 1px solid #ccc; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap;">
+                                        <?php echo esc_html($detail['original_content']); ?>
+                                    </div>
+                                </div>
+                                
+                                <div style="flex: 1; border: 1px solid #ddd; padding: 15px; background: #f9f9f9;">
+                                    <h4 style="margin-top: 0; color: #00a32a;">After (Fixed Content)</h4>
+                                    <div style="background: white; padding: 10px; border: 1px solid #ccc; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; white-space: pre-wrap;">
+                                        <?php echo esc_html($detail['fixed_content']); ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div style="background: #f0f6fc; padding: 15px; border-left: 4px solid #2271b1;">
+                                <p><strong>No changes needed:</strong> This page doesn't have any HTML nesting issues that need to be fixed.</p>
+                            </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <!-- Multiple posts results table -->
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th>Post Title</th>
+                                <th>Post Type</th>
+                                <th>Post ID</th>
+                                <th>Issues Found</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($results['details'] as $detail): ?>
+                                <tr>
+                                    <td><?php echo esc_html($detail['title']); ?></td>
+                                    <td><?php echo esc_html($detail['post_type']); ?></td>
+                                    <td><?php echo esc_html($detail['post_id']); ?></td>
+                                    <td><?php echo esc_html($detail['issues_found']); ?></td>
+                                    <td>
+                                        <?php if ($detail['status'] === 'fixed'): ?>
+                                            <span style="color: green;">✓ Fixed</span>
+                                        <?php elseif ($detail['status'] === 'no_issues'): ?>
+                                            <span style="color: blue;">No Issues</span>
+                                        <?php elseif ($detail['status'] === 'error'): ?>
+                                            <span style="color: red;">✗ Error</span>
+                                        <?php else: ?>
+                                            <span style="color: orange;">Preview</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * Fix invalid HTML blocks in WordPress content
+ * 
+ * @param bool $dry_run Whether to preview changes without making them
+ * @param array $post_types Array of post types to process
+ * @param int $limit Maximum number of posts to process (0 = all)
+ * @return array Results of the operation
+ */
+function fix_invalid_html_blocks($dry_run = true, $post_types = array('post', 'page'), $limit = 0) {
+    $results = array(
+        'total_count' => 0,
+        'found_issues' => 0,
+        'fixed_count' => 0,
+        'details' => array()
+    );
+    
+    // Build query args
+    $args = array(
+        'post_type' => $post_types,
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => 'ID',
+        'order' => 'ASC'
+    );
+    
+    if ($limit > 0) {
+        $args['posts_per_page'] = $limit;
+    }
+    
+    $posts = get_posts($args);
+    $results['total_count'] = count($posts);
+    
+    foreach ($posts as $post) {
+        $original_content = $post->post_content;
+        $fixed_content = fix_single_post_html($original_content);
+        $issues_found = 0;
+        $status = 'no_issues';
+        
+        // Count issues by comparing content
+        if ($original_content !== $fixed_content) {
+            $issues_found = count_html_issues($original_content, $fixed_content);
+            $results['found_issues']++;
+            
+            if ($dry_run) {
+                $status = 'preview';
+            } else {
+                // Actually update the post
+                $update_result = wp_update_post(array(
+                    'ID' => $post->ID,
+                    'post_content' => $fixed_content
+                ));
+                
+                if ($update_result) {
+                    $status = 'fixed';
+                    $results['fixed_count']++;
+                } else {
+                    $status = 'error';
+                }
+            }
+        }
+        
+        $results['details'][] = array(
+            'post_id' => $post->ID,
+            'title' => $post->post_title,
+            'post_type' => $post->post_type,
+            'issues_found' => $issues_found,
+            'status' => $status,
+            'original_content' => $original_content,
+            'fixed_content' => $fixed_content
+        );
+    }
+    
+    return $results;
+}
+
+/**
+ * Fix HTML issues in a single post's content
+ * 
+ * @param string $content The post content to fix
+ * @return string The fixed content
+ */
+function fix_single_post_html($content) {
+    if (empty($content)) {
+        return $content;
+    }
+    
+    $fixed = $content;
+    
+    // Fix 1: Unwrap headings from paragraphs
+    // <p><h1>...</h1></p> → <h1>...</h1>
+    $fixed = preg_replace('#<p>\s*(<h[1-6][^>]*>.*?</h[1-6]>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 2: Unwrap lists from paragraphs
+    // <p><ul>...</ul></p> → <ul>...</ul>
+    // <p><ol>...</ol></p> → <ol>...</ol>
+    $fixed = preg_replace('#<p>\s*(<(?:ul|ol)[^>]*>.*?</(?:ul|ol)>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 3: Unwrap divs from paragraphs
+    // <p><div>...</div></p> → <div>...</div>
+    $fixed = preg_replace('#<p>\s*(<div[^>]*>.*?</div>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 4: Unwrap tables from paragraphs
+    // <p><table>...</table></p> → <table>...</table>
+    $fixed = preg_replace('#<p>\s*(<table[^>]*>.*?</table>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 5: Unwrap blockquotes from paragraphs
+    // <p><blockquote>...</blockquote></p> → <blockquote>...</blockquote>
+    $fixed = preg_replace('#<p>\s*(<blockquote[^>]*>.*?</blockquote>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 6: Unwrap pre tags from paragraphs
+    // <p><pre>...</pre></p> → <pre>...</pre>
+    $fixed = preg_replace('#<p>\s*(<pre[^>]*>.*?</pre>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 7: Unwrap images from paragraphs (standalone images)
+    // <p><img /></p> → <img />
+    $fixed = preg_replace('#<p>\s*(<img[^>]*/?>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 8: Unwrap iframes from paragraphs
+    // <p><iframe>...</iframe></p> → <iframe>...</iframe>
+    $fixed = preg_replace('#<p>\s*(<iframe[^>]*>.*?</iframe>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 9: Unwrap video/audio elements from paragraphs
+    // <p><video>...</video></p> → <video>...</video>
+    $fixed = preg_replace('#<p>\s*(<(?:video|audio)[^>]*>.*?</(?:video|audio)>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 10: Unwrap form elements from paragraphs
+    // <p><form>...</form></p> → <form>...</form>
+    $fixed = preg_replace('#<p>\s*(<form[^>]*>.*?</form>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 11: Unwrap address elements from paragraphs
+    // <p><address>...</address></p> → <address>...</address>
+    $fixed = preg_replace('#<p>\s*(<address[^>]*>.*?</address>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 12: Unwrap fieldset elements from paragraphs
+    // <p><fieldset>...</fieldset></p> → <fieldset>...</fieldset>
+    $fixed = preg_replace('#<p>\s*(<fieldset[^>]*>.*?</fieldset>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 13: Unwrap hr elements from paragraphs
+    // <p><hr /></p> → <hr />
+    $fixed = preg_replace('#<p>\s*(<hr[^>]*/?>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 14: Unwrap br elements from paragraphs (standalone)
+    // <p><br /></p> → <br />
+    $fixed = preg_replace('#<p>\s*(<br[^>]*/?>)\s*</p>#is', '$1', $fixed);
+    
+    // Fix 15: Clean up empty paragraphs that might be left
+    // <p></p> → (remove)
+    $fixed = preg_replace('#<p>\s*</p>#is', '', $fixed);
+    
+    // Fix 16: Clean up paragraphs with only whitespace
+    // <p>   </p> → (remove)
+    $fixed = preg_replace('#<p>\s+</p>#is', '', $fixed);
+    
+    // Fix 17: Unwrap multiple block elements from paragraphs
+    // <p><h2>...</h2><p>...</p></p> → <h2>...</h2><p>...</p>
+    $fixed = preg_replace_callback(
+        '#<p>\s*((?:<(?:h[1-6]|ul|ol|div|table|blockquote|pre|iframe|video|audio|form|address|fieldset)[^>]*>.*?</(?:h[1-6]|ul|ol|div|table|blockquote|pre|iframe|video|audio|form|address|fieldset)>)+)\s*</p>#is',
+        function ($matches) {
+            return $matches[1];
+        },
+        $fixed
+    );
+    
+    // Fix 18: Unwrap mixed content (headings + paragraphs)
+    // <p><h2>...</h2><p>...</p></p> → <h2>...</h2><p>...</p>
+    $fixed = preg_replace_callback(
+        '#<p>\s*((?:<h[1-6]>.*?</h[1-6]>)+)\s*((?:<p>.*?</p>)+)\s*</p>#is',
+        function ($matches) {
+            return $matches[1] . "\n" . $matches[2];
+        },
+        $fixed
+    );
+    
+    // Fix 19: Unwrap mixed content (block elements + paragraphs)
+    // <p><div>...</div><p>...</p></p> → <div>...</div><p>...</p>
+    $fixed = preg_replace_callback(
+        '#<p>\s*((?:<(?:ul|ol|div|table|blockquote|pre|iframe|video|audio|form|address|fieldset)[^>]*>.*?</(?:ul|ol|div|table|blockquote|pre|iframe|video|audio|form|address|fieldset)>)+)\s*((?:<p>.*?</p>)+)\s*</p>#is',
+        function ($matches) {
+            return $matches[1] . "\n" . $matches[2];
+        },
+        $fixed
+    );
+    
+    // Fix 20: Clean up multiple consecutive line breaks
+    $fixed = preg_replace('#\n{3,}#', "\n\n", $fixed);
+    
+    return $fixed;
+}
+
+/**
+ * Count the number of HTML issues found in content
+ * 
+ * @param string $original_content The original content
+ * @param string $fixed_content The fixed content
+ * @return int Number of issues found
+ */
+function count_html_issues($original_content, $fixed_content) {
+    $issues = 0;
+    
+    // Count common patterns that indicate issues
+    $patterns = array(
+        '#<p>\s*<h[1-6][^>]*>.*?</h[1-6]>\s*</p>#is',
+        '#<p>\s*<(?:ul|ol)[^>]*>.*?</(?:ul|ol)>\s*</p>#is',
+        '#<p>\s*<div[^>]*>.*?</div>\s*</p>#is',
+        '#<p>\s*<table[^>]*>.*?</table>\s*</p>#is',
+        '#<p>\s*<blockquote[^>]*>.*?</blockquote>\s*</p>#is',
+        '#<p>\s*<pre[^>]*>.*?</pre>\s*</p>#is',
+        '#<p>\s*<img[^>]*/?>\s*</p>#is',
+        '#<p>\s*<iframe[^>]*>.*?</iframe>\s*</p>#is',
+        '#<p>\s*<(?:video|audio)[^>]*>.*?</(?:video|audio)>\s*</p>#is',
+        '#<p>\s*<form[^>]*>.*?</form>\s*</p>#is',
+        '#<p>\s*<address[^>]*>.*?</address>\s*</p>#is',
+        '#<p>\s*<fieldset[^>]*>.*?</fieldset>\s*</p>#is',
+        '#<p>\s*<hr[^>]*/?>\s*</p>#is',
+        '#<p>\s*<br[^>]*/?>\s*</p>#is',
+        '#<p>\s*</p>#is',
+        '#<p>\s+</p>#is'
+    );
+    
+    foreach ($patterns as $pattern) {
+        $matches = preg_match_all($pattern, $original_content);
+        if ($matches !== false) {
+            $issues += $matches;
+        }
+    }
+    
+    return $issues;
+}
+
+/**
+ * Fix HTML issues on a single page
+ * 
+ * @param int $page_id The page ID to fix
+ * @param bool $dry_run Whether to preview changes without making them
+ * @return array Results of the operation
+ */
+function fix_single_page_html_blocks($page_id, $dry_run = true) {
+    $results = array(
+        'total_count' => 1,
+        'found_issues' => 0,
+        'fixed_count' => 0,
+        'details' => array()
+    );
+    
+    $post = get_post($page_id);
+    if (!$post) {
+        $results['details'][] = array(
+            'post_id' => $page_id,
+            'title' => 'Page not found',
+            'post_type' => 'unknown',
+            'issues_found' => 0,
+            'status' => 'error',
+            'original_content' => '',
+            'fixed_content' => ''
+        );
+        return $results;
+    }
+    
+    $original_content = $post->post_content;
+    $fixed_content = fix_single_post_html($original_content);
+    $issues_found = 0;
+    $status = 'no_issues';
+    
+    // Count issues by comparing content
+    if ($original_content !== $fixed_content) {
+        $issues_found = count_html_issues($original_content, $fixed_content);
+        $results['found_issues'] = 1;
+        
+        if ($dry_run) {
+            $status = 'preview';
+        } else {
+            // Actually update the post
+            $update_result = wp_update_post(array(
+                'ID' => $post->ID,
+                'post_content' => $fixed_content
+            ));
+            
+            if ($update_result) {
+                $status = 'fixed';
+                $results['fixed_count'] = 1;
+            } else {
+                $status = 'error';
+            }
+        }
+    }
+    
+    $results['details'][] = array(
+        'post_id' => $post->ID,
+        'title' => $post->post_title,
+        'post_type' => $post->post_type,
+        'issues_found' => $issues_found,
+        'status' => $status,
+        'original_content' => $original_content,
+        'fixed_content' => $fixed_content
+    );
+    
+    return $results;
+}
+
+/**
+ * AJAX handler for fixing HTML blocks
+ */
+function handle_fix_html_blocks_ajax() {
+    // Check nonce for security
+    if (!wp_verify_nonce($_POST['fix_html_nonce'], 'fix_html_blocks')) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Security check failed')));
+    }
+    
+    // Check user permissions
+    if (!current_user_can('manage_options')) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Insufficient permissions')));
+    }
+    
+    $dry_run = isset($_POST['dry_run']) && $_POST['dry_run'] === 'true';
+    $post_types = isset($_POST['post_types']) ? $_POST['post_types'] : array('post', 'page');
+    $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 0;
+    
+    $results = fix_invalid_html_blocks($dry_run, $post_types, $limit);
+    
+    wp_die(json_encode(array(
+        'success' => true,
+        'results' => $results
+    )));
+}
+add_action('wp_ajax_fix_html_blocks', 'handle_fix_html_blocks_ajax');
+
+?>
+
 
