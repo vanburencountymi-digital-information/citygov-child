@@ -53,6 +53,13 @@ The CityGov Child Theme is a custom WordPress theme built on top of the CityGov 
   - Displays department details and staff directory using shortcodes.
   - Retrieves `department_id` and `department_name` from custom fields.
 
+### 6. JavaScript Fixes
+- **File**: `js/fix-swiper-conflict.js`
+  - **Purpose**: Resolves conflicts between Elementor slideshows and The Events Calendar plugin.
+  - **Problem**: The Events Calendar plugin was redefining the global Swiper object after Elementor had already initialized slideshows, causing slideshow transitions to break.
+  - **Solution**: Prevents any script from redefining the global Swiper object after it has been initially set, while allowing the first definition (Elementor's) to proceed normally.
+  - **Implementation**: Uses JavaScript Proxy and Object.defineProperty to monitor and control access to the global Swiper object.
+
 ## Custom Shortcodes
 
 ### 1. `[pagelist_ext]` Shortcode
@@ -90,6 +97,10 @@ The CityGov Child Theme is a custom WordPress theme built on top of the CityGov 
   - Overwrites the `pagelist_ext` shortcode to customize page listings.
 - **Shortcodes**
   - Utilizes shortcodes for displaying department details and staff directories.
+- **Elementor**
+  - Custom slideshow functionality with background slideshows.
+- **The Events Calendar**
+  - Resolved JavaScript conflicts between TEC and Elementor slideshows.
 
 ## Installation
 1. Upload the `citygov-child` folder to the `/wp-content/themes/` directory.
@@ -98,10 +109,12 @@ The CityGov Child Theme is a custom WordPress theme built on top of the CityGov 
 ## Notes
 - Ensure the CityGov parent theme is installed and activated.
 - Customizations are made to ensure compatibility with specific plugins and to enhance the functionality of the CityGov theme.
+- The Swiper conflict fix ensures Elementor slideshows work properly alongside The Events Calendar plugin.
 
 ## Changelog
 - **Version 1.0**
   - Initial release with custom shortcodes and template modifications.
+  - Added Swiper conflict resolution for Elementor slideshows.
 
 ## Future Enhancements
 - Consider adding more custom templates for different page types.

@@ -1,4 +1,19 @@
 <?php
+
+function vbc_enqueue_custom_scripts() {
+    // Only enqueue on the homepage
+    if (is_front_page()) {
+        wp_enqueue_script(
+            'vbc-fix-swiper-conflict',
+            get_stylesheet_directory_uri() . '/js/fix-swiper-conflict.js',
+            array(), // add 'jquery' here if your script depends on it
+            filemtime(get_stylesheet_directory() . '/js/fix-swiper-conflict.js'),
+            true // load in footer
+        );
+    }
+}
+add_action('wp_enqueue_scripts', 'vbc_enqueue_custom_scripts');
+
 function citygov_child_enqueue_styles() {
     // Load the parent stylesheet directly from the parent directory
     wp_enqueue_style('citygov-style', get_template_directory_uri() . '/style.css');
