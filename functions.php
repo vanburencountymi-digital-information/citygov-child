@@ -3267,6 +3267,176 @@ function handle_fix_html_blocks_ajax() {
 }
 add_action('wp_ajax_fix_html_blocks', 'handle_fix_html_blocks_ajax');
 
+// ===================== BULK SET DEPARTMENT SUBPAGE TEMPLATE TOOL =====================
+/**
+ * Bulk set the template for all subpages of department homepages
+ *
+ * @param bool $dry_run If true, only preview changes
+ * @param int $limit Max number of pages to process (0 = all)
+ * @return array Report of changes
+ */
+function set_department_subpage_templates($dry_run = true, $limit = 0) {
+    $report = array(
+        'total_checked' => 0,
+        'updated' => 0,
+        'skipped' => 0,
+        'details' => array(),
+    );
+    
+    // Get all published pages
+    $args = array(
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'posts_per_page' => -1,
+        'orderby' => 'ID',
+        'order' => 'ASC',
+    );
+    if ($limit > 0) {
+        $args['posts_per_page'] = $limit;
+    }
+    $pages = get_posts($args);
+    $template_file = 'template-department-subpage.php';
+    $skip_templates = array('template-department-subpage.php', 'template-department-subpage-no-sidebar.php');
+    
+    foreach ($pages as $page) {
+        $report['total_checked']++;
+        // Use your existing function to find department root
+        $dept_root_id = get_department_root_page_id($page->ID);
+        if (!$dept_root_id || $dept_root_id == $page->ID) {
+            $report['skipped']++;
+            $report['details'][] = array(
+                'post_id' => $page->ID,
+                'title' => $page->post_title,
+                'reason' => 'Not a subpage (or is department root)',
+                'status' => 'skipped',
+            );
+            continue;
+        }
+        // Check current template
+        $current_template = get_post_meta($page->ID, '_wp_page_template', true);
+        if (in_array($current_template, $skip_templates)) {
+            $report['skipped']++;
+            $report['details'][] = array(
+                'post_id' => $page->ID,
+                'title' => $page->post_title,
+                'reason' => 'Already set to department subpage template',
+                'status' => 'skipped',
+            );
+            continue;
+        }
+        // Update if not dry run
+        if (!$dry_run) {
+            update_post_meta($page->ID, '_wp_page_template', $template_file);
+        }
+        $report['updated']++;
+        $report['details'][] = array(
+            'post_id' => $page->ID,
+            'title' => $page->post_title,
+            'old_template' => $current_template,
+            'new_template' => $template_file,
+            'status' => $dry_run ? 'would update' : 'updated',
+        );
+    }
+    return $report;
+}
+
+/**
+ * Add admin page for bulk setting department subpage templates
+ */
+function add_department_subpage_template_tool_page() {
+    add_management_page(
+        'Set Department Subpage Templates',
+        'Set Dept Subpage Templates',
+        'manage_options',
+        'set-dept-subpage-templates',
+        'department_subpage_template_tool_page'
+    );
+}
+add_action('admin_menu', 'add_department_subpage_template_tool_page');
+
+function department_subpage_template_tool_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die('You do not have sufficient permissions to access this page.');
+    }
+    $message = '';
+    $report = array();
+    if (isset($_POST['set_templates'])) {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['set_templates_nonce'], 'set_templates_action')) {
+            $message = "<div class='notice notice-error'><p>Security check failed. Please try again.</p></div>";
+        } else {
+            $dry_run = isset($_POST['dry_run']);
+            $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 0;
+            $report = set_department_subpage_templates($dry_run, $limit);
+            if ($dry_run) {
+                $message = "<div class='notice notice-info'><p>Dry run: {$report['updated']} pages would be updated out of {$report['total_checked']} checked.</p></div>";
+            } else {
+                $message = "<div class='notice notice-success'><p>Updated {$report['updated']} pages out of {$report['total_checked']} checked.</p></div>";
+            }
+        }
+    }
+    ?>
+    <div class="wrap">
+        <h1>Set Department Subpage Templates</h1>
+        <div class="card">
+            <h2>Bulk Set Template for Department Subpages</h2>
+            <p>This tool will set the <code>template-department-subpage-no-sidebar.php</code> template for all subpages of department homepages (recursively), if not already set.</p>
+            <p><strong>⚠️ Always backup your database before running bulk tools!</strong></p>
+        </div>
+        <?php if ($message) echo $message; ?>
+        <form method="post">
+            <?php wp_nonce_field('set_templates_action', 'set_templates_nonce'); ?>
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="dry_run">Dry Run:</label></th>
+                    <td>
+                        <input type="checkbox" name="dry_run" id="dry_run" value="1" checked>
+                        <label for="dry_run">Preview changes without making them</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="limit">Limit:</label></th>
+                    <td>
+                        <input type="number" name="limit" id="limit" value="0" min="0" style="width: 100px;">
+                        <label for="limit">Number of pages to process (0 = all)</label>
+                    </td>
+                </tr>
+            </table>
+            <p><input type="submit" name="set_templates" class="button button-primary" value="Set Templates"></p>
+        </form>
+        <?php if (!empty($report) && !empty($report['details'])): ?>
+            <div class="card">
+                <h2>Report</h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>Post ID</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Old Template</th>
+                            <th>New Template</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($report['details'] as $row): ?>
+                            <tr>
+                                <td><?php echo esc_html($row['post_id']); ?></td>
+                                <td><?php echo esc_html($row['title']); ?></td>
+                                <td><?php echo esc_html($row['status']); ?></td>
+                                <td><?php echo isset($row['old_template']) ? esc_html($row['old_template']) : '-'; ?></td>
+                                <td><?php echo isset($row['new_template']) ? esc_html($row['new_template']) : '-'; ?></td>
+                                <td><?php echo isset($row['reason']) ? esc_html($row['reason']) : '-'; ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
 ?>
 
 
