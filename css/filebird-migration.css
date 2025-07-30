@@ -1,0 +1,158 @@
+/* FileBird Migration Tool Styles */
+
+.filebird-migration-tool .card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.filebird-migration-tool .card h2 {
+    margin-top: 0;
+    color: #23282d;
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+.filebird-migration-tool .card h3 {
+    color: #23282d;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.filebird-migration-tool .card ul {
+    margin-left: 20px;
+}
+
+.filebird-migration-tool .card li {
+    margin-bottom: 5px;
+}
+
+.filebird-migration-tool .widefat {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.filebird-migration-tool .widefat th {
+    background: #f9f9f9;
+    border: 1px solid #ccd0d4;
+    padding: 8px 12px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.filebird-migration-tool .widefat td {
+    border: 1px solid #ccd0d4;
+    padding: 8px 12px;
+    vertical-align: top;
+}
+
+.filebird-migration-tool .widefat tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.filebird-migration-tool code {
+    background: #f1f1f1;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: Consolas, Monaco, 'Andale Mono', monospace;
+    font-size: 0.9em;
+}
+
+.filebird-migration-tool .warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 12px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.filebird-migration-tool .checkbox-group {
+    margin: 15px 0;
+}
+
+.filebird-migration-tool .checkbox-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.filebird-migration-tool .checkbox-group input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.filebird-migration-tool .submit {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+
+.filebird-migration-tool .button-primary {
+    background: #0073aa;
+    border-color: #0073aa;
+    color: #fff;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.filebird-migration-tool .button-primary:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+.filebird-migration-tool .notice {
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 4px;
+    border-left: 4px solid;
+}
+
+.filebird-migration-tool .notice-success {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.filebird-migration-tool .notice-error {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.filebird-migration-tool .shortcode-preview {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 5px 0;
+    font-family: Consolas, Monaco, 'Andale Mono', monospace;
+    font-size: 0.9em;
+}
+
+.filebird-migration-tool .settings-summary {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.filebird-migration-tool .folder-name {
+    font-weight: 600;
+    color: #0073aa;
+}
+
+.filebird-migration-tool .post-link {
+    color: #0073aa;
+    text-decoration: none;
+}
+
+.filebird-migration-tool .post-link:hover {
+    text-decoration: underline;
+} 

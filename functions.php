@@ -3437,6 +3437,766 @@ function department_subpage_template_tool_page() {
     <?php
 }
 
+/**
+ * FileBird Document Library Migration Tool
+ * Migrates existing [filebird_docs] shortcodes to new Document Library custom post types
+ */
+
+// Add admin menu for the migration tool
+function add_filebird_migration_tool_page() {
+    add_management_page(
+        'FileBird Migration Tool',
+        'FileBird Migration',
+        'manage_options',
+        'filebird-migration-tool',
+        'filebird_migration_tool_page'
+    );
+}
+add_action('admin_menu', 'add_filebird_migration_tool_page');
+
+// Add admin menu for the rename tool
+function add_filebird_rename_tool_page() {
+    add_management_page(
+        'FileBird Rename Libraries',
+        'FileBird Rename',
+        'manage_options',
+        'filebird-rename-tool',
+        'filebird_rename_tool_page'
+    );
+}
+add_action('admin_menu', 'add_filebird_rename_tool_page');
+
+// Enqueue styles for the migration tool
+function enqueue_filebird_migration_styles($hook) {
+    if ($hook === 'tools_page_filebird-migration-tool') {
+        wp_enqueue_style('filebird-migration-styles', get_stylesheet_directory_uri() . '/css/filebird-migration.css', array(), '1.0.0');
+    }
+}
+add_action('admin_enqueue_scripts', 'enqueue_filebird_migration_styles');
+
+// Migration tool page
+function filebird_migration_tool_page() {
+    // Check if required plugins are active
+    $plugin_status = check_filebird_plugin_status();
+    if (!$plugin_status['active']) {
+        echo '<div class="notice notice-error"><p>' . esc_html($plugin_status['message']) . '</p></div>';
+    }
+    
+    // Handle form submission
+    if (isset($_POST['action']) && $_POST['action'] === 'migrate_shortcodes') {
+        if (wp_verify_nonce($_POST['migration_nonce'], 'filebird_migration')) {
+            $result = process_filebird_migration();
+            if ($result['success']) {
+                echo '<div class="notice notice-success"><p>' . esc_html($result['message']) . '</p></div>';
+            } else {
+                echo '<div class="notice notice-error"><p>' . esc_html($result['message']) . '</p></div>';
+            }
+        } else {
+            echo '<div class="notice notice-error"><p>Security check failed.</p></div>';
+        }
+    }
+
+    // Scan for existing shortcodes
+    $shortcodes = scan_for_filebird_shortcodes();
+    
+    ?>
+    <div class="wrap filebird-migration-tool">
+        <h1>FileBird Document Library Migration Tool</h1>
+        
+        <div class="card">
+            <h2>Migration Overview</h2>
+            <p>This tool will help you migrate existing <code>[filebird_docs]</code> shortcodes to the new Document Library custom post type system.</p>
+            
+            <h3>What this tool does:</h3>
+            <ul>
+                <li>Scans all posts and pages for existing <code>[filebird_docs]</code> shortcodes</li>
+                <li>Creates new Document Library custom post types with the settings from each shortcode</li>
+                <li>Replaces the old shortcodes with <code>[render_document_library id="X"]</code> shortcodes</li>
+                <li>Provides a detailed report of the migration process</li>
+            </ul>
+            
+            <h3>Benefits of the new system:</h3>
+            <ul>
+                <li><strong>Easier Management:</strong> Edit document library settings through the WordPress admin interface</li>
+                <li><strong>Better Organization:</strong> All document libraries are stored as custom post types</li>
+                <li><strong>Enhanced Features:</strong> Access to advanced features like document ordering and accordion controls</li>
+                <li><strong>Future-Proof:</strong> Better integration with WordPress core functionality</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Found Shortcodes</h2>
+            <?php if (empty($shortcodes)): ?>
+                <p>No <code>[filebird_docs]</code> shortcodes found in your content.</p>
+            <?php else: ?>
+                <p>Found <strong><?php echo count($shortcodes); ?></strong> shortcodes to migrate:</p>
+                <table class="widefat">
+                    <thead>
+                        <tr>
+                            <th>Post/Page</th>
+                            <th>Shortcode</th>
+                            <th>Folder ID</th>
+                            <th>Layout</th>
+                            <th>Other Settings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($shortcodes as $shortcode): ?>
+                            <tr>
+                                <td>
+                                    <a href="<?php echo get_edit_post_link($shortcode['post_id']); ?>" target="_blank" class="post-link">
+                                        <?php echo esc_html($shortcode['post_title']); ?>
+                                    </a>
+                                </td>
+                                <td><code><?php echo esc_html($shortcode['shortcode']); ?></code></td>
+                                <td><span class="folder-name"><?php echo esc_html($shortcode['folder_id']); ?></span></td>
+                                <td><?php echo esc_html($shortcode['layout']); ?></td>
+                                <td class="settings-summary">
+                                    <?php 
+                                    $settings = array();
+                                    if ($shortcode['include_subfolders']) $settings[] = 'Include Subfolders';
+                                    if ($shortcode['group_by_folder']) $settings[] = 'Group by Folder';
+                                    if ($shortcode['show_size']) $settings[] = 'Show Size';
+                                    if ($shortcode['show_date']) $settings[] = 'Show Date';
+                                    echo esc_html(implode(', ', $settings));
+                                    ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($shortcodes)): ?>
+            <div class="card">
+                <h2>Start Migration</h2>
+                <div class="warning">
+                    <strong>Warning:</strong> This process will modify your posts and pages. It's recommended to backup your database before proceeding.
+                </div>
+                
+                <form method="post" action="">
+                    <?php wp_nonce_field('filebird_migration', 'migration_nonce'); ?>
+                    <input type="hidden" name="action" value="migrate_shortcodes">
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="dry_run" value="1" checked>
+                            Run in dry-run mode (preview only, no changes made)
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="create_libraries" value="1" checked>
+                            Create Document Library custom post types
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="replace_shortcodes" value="1" checked>
+                            Replace shortcodes in posts/pages
+                        </label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="rename_libraries" value="1" checked>
+                            Rename Document Libraries based on usage (where they are displayed)
+                        </label>
+                    </div>
+                    
+                    <div class="submit">
+                        <input type="submit" name="submit" id="submit" class="button button-primary" value="Start Migration">
+                    </div>
+                </form>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+// Check if FileBird plugin is active and properly configured
+function check_filebird_plugin_status() {
+    $status = array(
+        'active' => true,
+        'message' => ''
+    );
+    
+    // Check if FileBird plugin is active
+    if (!class_exists('FileBird\Plugin') && !class_exists('FileBird')) {
+        $status['active'] = false;
+        $status['message'] = 'FileBird plugin is not active. Please install and activate the FileBird plugin first.';
+        return $status;
+    }
+    
+    // Check if Document Library custom post type is registered
+    if (!post_type_exists('document_library')) {
+        $status['active'] = false;
+        $status['message'] = 'Document Library custom post type is not registered. Please ensure the FileBird Frontend Documents plugin is activated.';
+        return $status;
+    }
+    
+    return $status;
+}
+
+// Scan for existing filebird_docs shortcodes
+function scan_for_filebird_shortcodes() {
+    $shortcodes = array();
+    
+    // Get all posts and pages
+    $posts = get_posts(array(
+        'post_type' => array('post', 'page'),
+        'post_status' => 'publish',
+        'numberposts' => -1,
+        'fields' => 'ids'
+    ));
+    
+    foreach ($posts as $post_id) {
+        $post = get_post($post_id);
+        $content = $post->post_content;
+        
+        // Find all [filebird_docs] shortcodes
+        preg_match_all('/\[filebird_docs\s+([^\]]+)\]/', $content, $matches, PREG_SET_ORDER);
+        
+        foreach ($matches as $match) {
+            $shortcode = $match[0];
+            $attributes = $match[1];
+            
+            // Parse attributes
+            $parsed_attrs = parse_shortcode_attributes($attributes);
+            
+            if (!empty($parsed_attrs['folder'])) {
+                $shortcodes[] = array(
+                    'post_id' => $post_id,
+                    'post_title' => $post->post_title,
+                    'shortcode' => $shortcode,
+                    'folder_id' => $parsed_attrs['folder'],
+                    'layout' => $parsed_attrs['layout'] ?? 'grid',
+                    'include_subfolders' => $parsed_attrs['include_subfolders'] ?? false,
+                    'group_by_folder' => $parsed_attrs['group_by_folder'] ?? false,
+                    'show_size' => $parsed_attrs['show_size'] ?? false,
+                    'show_date' => $parsed_attrs['show_date'] ?? false,
+                    'show_thumbnail' => $parsed_attrs['show_thumbnail'] ?? true,
+                    'columns' => $parsed_attrs['columns'] ?? 3,
+                    'orderby' => $parsed_attrs['orderby'] ?? 'date',
+                    'order' => $parsed_attrs['order'] ?? 'DESC',
+                    'limit' => $parsed_attrs['limit'] ?? -1,
+                    'accordion_default' => $parsed_attrs['accordion_default'] ?? 'closed',
+                    'exclude_folders' => $parsed_attrs['exclude_folders'] ?? '',
+                    'custom_class' => $parsed_attrs['class'] ?? '',
+                    'parsed_attrs' => $parsed_attrs
+                );
+            }
+        }
+    }
+    
+    return $shortcodes;
+}
+
+// Parse shortcode attributes
+function parse_shortcode_attributes($attributes_string) {
+    $attributes = array();
+    
+    // Match key="value" pairs
+    preg_match_all('/(\w+)\s*=\s*"([^"]*)"/', $attributes_string, $matches, PREG_SET_ORDER);
+    
+    foreach ($matches as $match) {
+        $key = $match[1];
+        $value = $match[2];
+        
+        // Convert string values to appropriate types
+        switch ($key) {
+            case 'folder':
+            case 'columns':
+            case 'limit':
+                $attributes[$key] = intval($value);
+                break;
+            case 'show_title':
+            case 'show_size':
+            case 'show_date':
+            case 'show_thumbnail':
+            case 'include_subfolders':
+            case 'group_by_folder':
+                $attributes[$key] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+                break;
+            default:
+                $attributes[$key] = $value;
+        }
+    }
+    
+    return $attributes;
+}
+
+// Process the migration
+function process_filebird_migration() {
+    $dry_run = isset($_POST['dry_run']) && $_POST['dry_run'] === '1';
+    $create_libraries = isset($_POST['create_libraries']) && $_POST['create_libraries'] === '1';
+    $replace_shortcodes = isset($_POST['replace_shortcodes']) && $_POST['replace_shortcodes'] === '1';
+    $rename_libraries = isset($_POST['rename_libraries']) && $_POST['rename_libraries'] === '1';
+    
+    $shortcodes = scan_for_filebird_shortcodes();
+    $results = array(
+        'libraries_created' => 0,
+        'shortcodes_replaced' => 0,
+        'libraries_renamed' => 0,
+        'errors' => array()
+    );
+    
+    if (empty($shortcodes)) {
+        return array(
+            'success' => true,
+            'message' => 'No shortcodes found to migrate.'
+        );
+    }
+    
+    foreach ($shortcodes as $shortcode_data) {
+        try {
+            // Create Document Library if requested
+            $library_id = null;
+            if ($create_libraries && !$dry_run) {
+                $library_id = create_document_library($shortcode_data);
+                if ($library_id) {
+                    $results['libraries_created']++;
+                }
+            } elseif ($create_libraries && $dry_run) {
+                $results['libraries_created']++;
+            }
+            
+            // Replace shortcode if requested
+            if ($replace_shortcodes && !$dry_run) {
+                $new_shortcode = '[render_document_library id="' . $library_id . '"]';
+                $replaced = replace_shortcode_in_post($shortcode_data['post_id'], $shortcode_data['shortcode'], $new_shortcode);
+                if ($replaced) {
+                    $results['shortcodes_replaced']++;
+                }
+            } elseif ($replace_shortcodes && $dry_run) {
+                $results['shortcodes_replaced']++;
+            }
+            
+            // Rename library based on usage if requested
+            if ($rename_libraries && $library_id && !$dry_run) {
+                $renamed = rename_document_library_based_on_usage($library_id, $shortcode_data['post_id'], $shortcode_data['post_title']);
+                if ($renamed) {
+                    $results['libraries_renamed']++;
+                }
+            } elseif ($rename_libraries && $library_id && $dry_run) {
+                $results['libraries_renamed']++;
+            }
+            
+        } catch (Exception $e) {
+            $results['errors'][] = 'Error processing shortcode in post "' . $shortcode_data['post_title'] . '": ' . $e->getMessage();
+        }
+    }
+    
+    // Build result message
+    $message = '';
+    if ($dry_run) {
+        $message .= 'Dry run completed. Would create ' . $results['libraries_created'] . ' Document Libraries, replace ' . $results['shortcodes_replaced'] . ' shortcodes';
+        if ($results['libraries_renamed'] > 0) {
+            $message .= ', and rename ' . $results['libraries_renamed'] . ' Document Libraries';
+        }
+        $message .= '.';
+    } else {
+        $message .= 'Migration completed. Created ' . $results['libraries_created'] . ' Document Libraries, replaced ' . $results['shortcodes_replaced'] . ' shortcodes';
+        if ($results['libraries_renamed'] > 0) {
+            $message .= ', and renamed ' . $results['libraries_renamed'] . ' Document Libraries';
+        }
+        $message .= '.';
+        
+        // Add helpful information about the new system
+        if ($results['libraries_created'] > 0) {
+            $message .= ' You can now manage these Document Libraries from the "Document Libraries" menu in your WordPress admin.';
+        }
+    }
+    
+    if (!empty($results['errors'])) {
+        $message .= ' Errors: ' . implode('; ', $results['errors']);
+    }
+    
+    return array(
+        'success' => empty($results['errors']),
+        'message' => $message,
+        'results' => $results
+    );
+}
+
+// Create a new Document Library custom post type
+function create_document_library($shortcode_data) {
+    // Check if document_library post type exists
+    if (!post_type_exists('document_library')) {
+        throw new Exception('Document Library custom post type is not registered. Please ensure the FileBird Frontend Documents plugin is activated.');
+    }
+    
+    // Generate title based on folder and settings
+    $folder_name = get_folder_name($shortcode_data['folder_id']);
+    $title = 'Document Library - ' . $folder_name;
+    
+    // Create the post
+    $post_data = array(
+        'post_title' => $title,
+        'post_content' => '',
+        'post_status' => 'publish',
+        'post_type' => 'document_library'
+    );
+    
+    $library_id = wp_insert_post($post_data);
+    
+    if (is_wp_error($library_id)) {
+        throw new Exception('Failed to create Document Library: ' . $library_id->get_error_message());
+    }
+    
+    // Save the meta fields
+    update_post_meta($library_id, '_document_library_folders', $shortcode_data['folder_id']);
+    update_post_meta($library_id, '_document_library_layout', $shortcode_data['layout']);
+    update_post_meta($library_id, '_document_library_columns', $shortcode_data['columns']);
+    update_post_meta($library_id, '_document_library_orderby', $shortcode_data['orderby']);
+    update_post_meta($library_id, '_document_library_order', $shortcode_data['order']);
+    update_post_meta($library_id, '_document_library_limit', $shortcode_data['limit']);
+    update_post_meta($library_id, '_document_library_show_title', $shortcode_data['show_title'] ? 'true' : 'false');
+    update_post_meta($library_id, '_document_library_show_size', $shortcode_data['show_size'] ? 'true' : 'false');
+    update_post_meta($library_id, '_document_library_show_date', $shortcode_data['show_date'] ? 'true' : 'false');
+    update_post_meta($library_id, '_document_library_show_thumbnail', $shortcode_data['show_thumbnail'] ? 'true' : 'false');
+    update_post_meta($library_id, '_document_library_include_subfolders', $shortcode_data['include_subfolders'] ? 'true' : 'false');
+    update_post_meta($library_id, '_document_library_group_by_folder', $shortcode_data['group_by_folder'] ? 'true' : 'false');
+    update_post_meta($library_id, '_document_library_accordion_default', $shortcode_data['accordion_default']);
+    update_post_meta($library_id, '_document_library_exclude_folders', $shortcode_data['exclude_folders']);
+    update_post_meta($library_id, '_document_library_custom_class', $shortcode_data['custom_class']);
+    
+    return $library_id;
+}
+
+// Get folder name from FileBird
+function get_folder_name($folder_id) {
+    // Try to get folder name from FileBird
+    if (class_exists('FileBird_FD_Helper')) {
+        $folder = FileBird_FD_Helper::getFolderById($folder_id);
+        if ($folder && isset($folder->name)) {
+            return $folder->name;
+        }
+    }
+    
+    // Try alternative class name
+    if (class_exists('FileBird_FD_FileBird_Helper')) {
+        $folder = FileBird_FD_FileBird_Helper::getFolderById($folder_id);
+        if ($folder && isset($folder->name)) {
+            return $folder->name;
+        }
+    }
+    
+    // Fallback
+    return 'Folder ' . $folder_id;
+}
+
+// Replace shortcode in a post
+function replace_shortcode_in_post($post_id, $old_shortcode, $new_shortcode) {
+    $post = get_post($post_id);
+    $content = $post->post_content;
+    
+    $new_content = str_replace($old_shortcode, $new_shortcode, $content);
+    
+    if ($new_content !== $content) {
+        $updated_post = array(
+            'ID' => $post_id,
+            'post_content' => $new_content
+        );
+        
+        $result = wp_update_post($updated_post);
+        return !is_wp_error($result);
+    }
+    
+    return false;
+}
+
+// Rename Document Library based on where it's used
+function rename_document_library_based_on_usage($library_id, $post_id, $post_title) {
+    // Clean the post title to make it suitable for a Document Library name
+    $clean_title = sanitize_text_field($post_title);
+    
+    // Remove common prefixes/suffixes that might make the name too long
+    $clean_title = preg_replace('/\s*-\s*Van Buren County\s*$/i', '', $clean_title);
+    $clean_title = preg_replace('/\s*-\s*Government\s*$/i', '', $clean_title);
+    $clean_title = preg_replace('/\s*Department\s*$/i', '', $clean_title);
+    
+    // Truncate if too long (WordPress title limit is typically 60 characters)
+    if (strlen($clean_title) > 50) {
+        $clean_title = substr($clean_title, 0, 47) . '...';
+    }
+    
+    // Create the new title
+    $new_title = 'Document Library - ' . $clean_title;
+    
+    // Update the Document Library post
+    $updated_post = array(
+        'ID' => $library_id,
+        'post_title' => $new_title
+    );
+    
+    $result = wp_update_post($updated_post);
+    
+    if (is_wp_error($result)) {
+        return false;
+    }
+    
+    // Update the usage tracking meta
+    update_document_library_usage($library_id, $post_id, $post_title);
+    
+    return true;
+}
+
+// Update the usage tracking meta for a Document Library
+function update_document_library_usage($library_id, $post_id, $post_title) {
+    // Get current usage data
+    $current_usage = get_post_meta($library_id, '_document_library_usage', true);
+    if (!is_array($current_usage)) {
+        $current_usage = array();
+    }
+    
+    // Create usage entry
+    $usage_entry = array(
+        'type' => 'page',
+        'id' => $post_id,
+        'title' => $post_title,
+        'url' => get_permalink($post_id),
+        'edit_url' => get_edit_post_link($post_id, 'raw')
+    );
+    
+    // Check if this usage entry already exists
+    $exists = false;
+    foreach ($current_usage as $usage) {
+        if ($usage['id'] == $post_id && $usage['type'] == 'page') {
+            $exists = true;
+            break;
+        }
+    }
+    
+    // Add new usage entry if it doesn't exist
+    if (!$exists) {
+        $current_usage[] = $usage_entry;
+        update_post_meta($library_id, '_document_library_usage', $current_usage);
+    }
+}
+
+// Rename tool page for existing Document Libraries
+function filebird_rename_tool_page() {
+    // Check if required plugins are active
+    $plugin_status = check_filebird_plugin_status();
+    if (!$plugin_status['active']) {
+        echo '<div class="notice notice-error"><p>' . esc_html($plugin_status['message']) . '</p></div>';
+    }
+    
+    // Handle form submission
+    if (isset($_POST['action']) && $_POST['action'] === 'rename_libraries') {
+        if (wp_verify_nonce($_POST['rename_nonce'], 'filebird_rename')) {
+            $result = process_library_renaming();
+            if ($result['success']) {
+                echo '<div class="notice notice-success"><p>' . esc_html($result['message']) . '</p></div>';
+            } else {
+                echo '<div class="notice notice-error"><p>' . esc_html($result['message']) . '</p></div>';
+            }
+        } else {
+            echo '<div class="notice notice-error"><p>Security check failed.</p></div>';
+        }
+    }
+
+    // Get existing Document Libraries
+    $libraries = get_posts(array(
+        'post_type' => 'document_library',
+        'post_status' => 'publish',
+        'numberposts' => -1,
+        'orderby' => 'title',
+        'order' => 'ASC'
+    ));
+    
+    ?>
+    <div class="wrap filebird-migration-tool">
+        <h1>FileBird Document Library Rename Tool</h1>
+        
+        <div class="card">
+            <h2>Rename Existing Document Libraries</h2>
+            <p>This tool will rename existing Document Libraries based on where they are used (as tracked in the <code>_document_library_usage</code> meta field).</p>
+            
+            <h3>What this tool does:</h3>
+            <ul>
+                <li>Scans all existing Document Libraries</li>
+                <li>Reads the usage tracking data to see where each library is displayed</li>
+                <li>Renames libraries based on the page/post where they are used</li>
+                <li>Cleans up titles to make them more readable</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Existing Document Libraries</h2>
+            <?php if (empty($libraries)): ?>
+                <p>No Document Libraries found.</p>
+            <?php else: ?>
+                <p>Found <strong><?php echo count($libraries); ?></strong> Document Libraries:</p>
+                <table class="widefat">
+                    <thead>
+                        <tr>
+                            <th>Current Name</th>
+                            <th>Usage Information</th>
+                            <th>Proposed New Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($libraries as $library): ?>
+                            <?php 
+                            $usage = get_post_meta($library->ID, '_document_library_usage', true);
+                            $proposed_name = get_proposed_library_name($library->ID, $usage);
+                            ?>
+                            <tr>
+                                <td>
+                                    <a href="<?php echo get_edit_post_link($library->ID); ?>" target="_blank" class="post-link">
+                                        <?php echo esc_html($library->post_title); ?>
+                                    </a>
+                                </td>
+                                <td class="settings-summary">
+                                    <?php if (is_array($usage) && !empty($usage)): ?>
+                                        <?php 
+                                        $usage_text = array();
+                                        foreach ($usage as $usage_item) {
+                                            $usage_text[] = $usage_item['title'];
+                                        }
+                                        echo esc_html(implode(', ', $usage_text));
+                                        ?>
+                                    <?php else: ?>
+                                        <em>No usage data found</em>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($proposed_name && $proposed_name !== $library->post_title): ?>
+                                        <span class="folder-name"><?php echo esc_html($proposed_name); ?></span>
+                                    <?php else: ?>
+                                        <em>No change needed</em>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($libraries)): ?>
+            <div class="card">
+                <h2>Start Renaming</h2>
+                <div class="warning">
+                    <strong>Warning:</strong> This process will rename Document Libraries. It's recommended to backup your database before proceeding.
+                </div>
+                
+                <form method="post" action="">
+                    <?php wp_nonce_field('filebird_rename', 'rename_nonce'); ?>
+                    <input type="hidden" name="action" value="rename_libraries">
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="dry_run" value="1" checked>
+                            Run in dry-run mode (preview only, no changes made)
+                        </label>
+                    </div>
+                    
+                    <div class="submit">
+                        <input type="submit" name="submit" id="submit" class="button button-primary" value="Start Renaming">
+                    </div>
+                </form>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+// Process the library renaming
+function process_library_renaming() {
+    $dry_run = isset($_POST['dry_run']) && $_POST['dry_run'] === '1';
+    
+    $libraries = get_posts(array(
+        'post_type' => 'document_library',
+        'post_status' => 'publish',
+        'numberposts' => -1
+    ));
+    
+    $results = array(
+        'libraries_renamed' => 0,
+        'errors' => array()
+    );
+    
+    foreach ($libraries as $library) {
+        try {
+            $usage = get_post_meta($library->ID, '_document_library_usage', true);
+            $proposed_name = get_proposed_library_name($library->ID, $usage);
+            
+            if ($proposed_name && $proposed_name !== $library->post_title) {
+                if (!$dry_run) {
+                    $updated_post = array(
+                        'ID' => $library->ID,
+                        'post_title' => $proposed_name
+                    );
+                    
+                    $result = wp_update_post($updated_post);
+                    if (!is_wp_error($result)) {
+                        $results['libraries_renamed']++;
+                    } else {
+                        $results['errors'][] = 'Error renaming library "' . $library->post_title . '": ' . $result->get_error_message();
+                    }
+                } else {
+                    $results['libraries_renamed']++;
+                }
+            }
+        } catch (Exception $e) {
+            $results['errors'][] = 'Error processing library "' . $library->post_title . '": ' . $e->getMessage();
+        }
+    }
+    
+    // Build result message
+    $message = '';
+    if ($dry_run) {
+        $message .= 'Dry run completed. Would rename ' . $results['libraries_renamed'] . ' Document Libraries.';
+    } else {
+        $message .= 'Renaming completed. Renamed ' . $results['libraries_renamed'] . ' Document Libraries.';
+    }
+    
+    if (!empty($results['errors'])) {
+        $message .= ' Errors: ' . implode('; ', $results['errors']);
+    }
+    
+    return array(
+        'success' => empty($results['errors']),
+        'message' => $message,
+        'results' => $results
+    );
+}
+
+// Get proposed name for a library based on usage
+function get_proposed_library_name($library_id, $usage) {
+    if (!is_array($usage) || empty($usage)) {
+        return false;
+    }
+    
+    // Get the first usage entry (most relevant)
+    $first_usage = $usage[0];
+    $post_title = $first_usage['title'];
+    
+    // Clean the post title to make it suitable for a Document Library name
+    $clean_title = sanitize_text_field($post_title);
+    
+    // Remove common prefixes/suffixes that might make the name too long
+    $clean_title = preg_replace('/\s*-\s*Van Buren County\s*$/i', '', $clean_title);
+    $clean_title = preg_replace('/\s*-\s*Government\s*$/i', '', $clean_title);
+    $clean_title = preg_replace('/\s*Department\s*$/i', '', $clean_title);
+    
+    // Truncate if too long (WordPress title limit is typically 60 characters)
+    if (strlen($clean_title) > 50) {
+        $clean_title = substr($clean_title, 0, 47) . '...';
+    }
+    
+    // Create the new title
+    $new_title = 'Document Library - ' . $clean_title;
+    
+    return $new_title;
+}
+
 ?>
 
 
