@@ -60,6 +60,7 @@ get_header(); ?>
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    margin-top: 20px;
 }
 
 .form-header {
@@ -75,7 +76,7 @@ get_header(); ?>
 
 .form-excerpt {
     font-size: 1.2em;
-    color: #666;
+    color: #000;
     font-style: italic;
 }
 
@@ -85,46 +86,45 @@ get_header(); ?>
 }
 
 .form-instructions-section {
-    background: #f8f9fa;
+    background: #fff;
     padding: 20px;
     border-radius: 8px;
-    border-left: 4px solid #007cba;
+    border-left: 4px solid #a34733;
 }
 
 .form-instructions h3 {
     margin-top: 0;
-    color: #007cba;
+    color: #a34733;
 }
 
 .form-iframe-section {
-    min-height: 800px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
+    min-height: 80vh;
+    padding: 20px;
+    background: #fff;
 }
 
 .form-iframe-section iframe {
   width: 100%;
-  max-width: 800px; /* Reasonable max width for readability */
-  height: 1000px; /* You may need to adjust based on form length or set dynamically */
-  margin: 2rem auto; /* Center the form and give some spacing */
-  border: none; /* Remove the default iframe border */
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1); /* Soft shadow for subtle depth */
-  border-radius: 8px; /* Slight rounding of corners */
-  background-color: transparent; /* Keep the background consistent */
+  max-width: 800px;
+  height: 80vh; /* Fixed height - users can scroll the container */
+  margin: 0 auto;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background-color: transparent;
   display: block;
 }
 
 .form-contact-section {
-    background: #e7f3ff;
+    background: #fff;
     padding: 20px;
     border-radius: 8px;
-    border-left: 4px solid #007cba;
+    border-left: 4px solid #a34733;
 }
 
 .form-contact-info h3 {
     margin-top: 0;
-    color: #007cba;
+    color: #a34733;
 }
 
 .form-contact-info p {
@@ -132,7 +132,7 @@ get_header(); ?>
 }
 
 .form-contact-info a {
-    color: #007cba;
+    color: #a34733;
     text-decoration: none;
 }
 
@@ -154,10 +154,33 @@ get_header(); ?>
         font-size: 2em;
     }
     
+    .form-iframe-section {
+        max-height: 70vh; /* Smaller on mobile */
+    }
+    
     .form-iframe-section iframe {
-        height: 600px;
+        height: 800px; /* Slightly taller on mobile for better scrolling */
     }
 }
 </style>
+
+<script>
+// Enhance iframe scrolling experience
+document.addEventListener('DOMContentLoaded', function() {
+    const iframeSection = document.querySelector('.form-iframe-section');
+    const iframe = iframeSection ? iframeSection.querySelector('iframe') : null;
+    
+    if (iframe) {
+        
+        // Add smooth scrolling to the container
+        iframeSection.style.scrollBehavior = 'smooth';
+        
+        // Optional: Auto-scroll to top when iframe loads
+        iframe.addEventListener('load', function() {
+            iframeSection.scrollTop = 0;
+        });
+    }
+});
+</script>
 
 <?php get_footer(); ?> 
