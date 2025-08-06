@@ -14,23 +14,33 @@
     color: #666;
 }
 
+
+
+/* Breadcrumbs on subpages (white background) */
+.breadcrumbs-container .breadcrumbs {
+    color: #666;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
+}
+
 .breadcrumbs .crumb {
     display: inline-flex;
     align-items: center;
 }
 
-.breadcrumbs .crumb a {
-    color: #0073aa;
+/* Default breadcrumb styles (for subpages) */
+.breadcrumbs-container .breadcrumbs .crumb a {
+    color: #a3473b;
     text-decoration: none;
     transition: color 0.2s ease;
 }
 
-.breadcrumbs .crumb a:hover {
-    color: #005a87;
+.breadcrumbs-container .breadcrumbs .crumb a:hover {
+    color: #a3473b;
     text-decoration: underline;
 }
 
-.breadcrumbs .crumb.current {
+.breadcrumbs-container .breadcrumbs .crumb.current {
     color: #333;
     font-weight: 500;
 }
@@ -39,8 +49,40 @@
     margin: 0 0.5rem;
     color: #999;
     font-weight: 300;
+    font-size: 0.8em;
 }
 
+/* Subpage separator color */
+.breadcrumbs-container .breadcrumbs .breadcrumb-separator {
+    color: #999;
+}
+
+/* Breadcrumbs on department homepages (overlaid on header/banner) */
+.page-header .breadcrumbs {
+    color: #fff;
+    margin: 0.5rem 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.page-header .breadcrumbs .crumb a {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.page-header .breadcrumbs .crumb a:hover {
+    color: #e0e0e0;
+    text-decoration: underline;
+}
+
+.page-header .breadcrumbs .crumb.current {
+    color: #fff;
+    font-weight: 500;
+}
+
+.page-header .breadcrumbs .breadcrumb-separator {
+    color: rgba(255,255,255,0.8);
+}
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .breadcrumbs {
@@ -70,4 +112,34 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+}
+
+/* Override parent theme breadcrumb styles */
+.main-breadcrumbs {
+    /* Remove any existing pseudo-elements */
+}
+
+.main-breadcrumbs::after,
+.main-breadcrumbs::before {
+    content: none !important;
+}
+
+/* Ensure our breadcrumb styles take precedence */
+.main-breadcrumbs .breadcrumbs {
+    margin: 0;
+    padding: 0;
+}
+
+.main-breadcrumbs .breadcrumbs::after,
+.main-breadcrumbs .breadcrumbs::before {
+    content: none !important;
+}
+
+/* Style the new breadcrumbs container */
+.breadcrumbs-container {
+    margin: 1rem 0;
+}
+
+.breadcrumbs-container.subpage-breadcrumbs {
+    margin: 0.5rem 0;
 } 

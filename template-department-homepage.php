@@ -25,11 +25,11 @@ Template Post Type: post, page, event
     
     <div class="container">
 
-    	<div class="main-breadcrumbs">
+    	    <div class="breadcrumbs-container">
         
-        	<?php citygov_breadcrumbs()?>
-            
-        </div>
+        <?php citygov_breadcrumbs()?>
+        
+    </div>
 
         <h1 itemprop="headline" class="entry-title"><?php the_title(); ?></h1>
     

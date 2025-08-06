@@ -85,13 +85,15 @@ function vbc_register_assets() {
             'type' => 'style',
             'src' => get_template_directory_uri() . '/style.css',
             'deps' => [],
-            'ver' => wp_get_theme()->get('Version')
+            'ver' => wp_get_theme()->get('Version'),
+            'absolute' => true
         ],
         'citygov-child-style' => [
             'type' => 'style',
             'src' => get_stylesheet_uri(),
             'deps' => ['citygov-style'],
-            'ver' => wp_get_theme()->get('Version')
+            'ver' => wp_get_theme()->get('Version'),
+            'absolute' => true
         ],
         'pagelist-accordion-styles' => [
             'type' => 'style',
@@ -145,9 +147,12 @@ function vbc_register_assets() {
                 wp_localize_script('pdf-replace-modal', 'ajaxurl', admin_url('admin-ajax.php'));
             }
         } else {
+            // Handle absolute vs relative URLs for styles
+            $style_src = isset($args['absolute']) && $args['absolute'] ? $args['src'] : get_stylesheet_directory_uri() . $args['src'];
+            
             wp_enqueue_style(
                 $handle,
-                $args['src'],
+                $style_src,
                 $args['deps'],
                 $args['ver']
             );

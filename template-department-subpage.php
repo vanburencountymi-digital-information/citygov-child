@@ -6,7 +6,6 @@ Template Post Type: post, page, event
 ?>
 <?php get_header(); ?>
 <?php if (have_posts()) : while (have_posts()) : the_post(); ?>
-
 <div class="container_alt post tmnf_page compact-article">
 
     <div id="core" class="postbar postbarLeft">
@@ -26,7 +25,7 @@ Template Post Type: post, page, event
                 <div class="clearfix"></div>
 
                 <div class="entry">
-                    <div class="main-breadcrumbs subpage-breadcrumbs">
+                    <div class="breadcrumbs">
                         <?php citygov_breadcrumbs(); ?>
                     </div>
 

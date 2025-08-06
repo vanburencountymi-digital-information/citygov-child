@@ -63,16 +63,25 @@ function get_page_breadcrumbs() {
     global $post;
     $breadcrumbs = array();
     
-    // Check if this is a department page or related to a department
-    $department_info = get_department_info($post);
-    if ($department_info) {
-        $breadcrumbs[] = $department_info;
-    }
-    
-    // Check for special sections like forms or directory
+    // Check for special sections like forms or directory first
     $section_info = get_section_info($post);
     if ($section_info) {
         $breadcrumbs[] = $section_info;
+    }
+    
+    // Check for the next level after the main section (super department or equivalent)
+    $next_level_info = get_next_level_after_section($post);
+    if ($next_level_info) {
+        $breadcrumbs[] = $next_level_info;
+    }
+    
+    // Check if this is a department page or related to a department
+    $department_info = get_department_info($post);
+    if ($department_info) {
+        // Only add department info if we're not already on the department homepage
+        if ($department_info['url'] !== get_permalink($post)) {
+            $breadcrumbs[] = $department_info;
+        }
     }
     
     // Add current page
@@ -93,6 +102,12 @@ function get_single_breadcrumbs() {
     
     // Handle custom post types
     $post_type = get_post_type();
+    
+    // Check for section info first (for forms, directory, etc.)
+    $section_info = get_section_info();
+    if ($section_info) {
+        $breadcrumbs[] = $section_info;
+    }
     
     switch ($post_type) {
         case 'wpm_project':
@@ -210,31 +225,77 @@ function get_archive_breadcrumbs() {
  * Get department information for a page
  */
 function get_department_info($post) {
-    // Check if this page is a department homepage
-    if (has_term('department-homepage', 'category') || 
-        has_term('department', 'category') ||
-        get_post_meta($post->ID, '_is_department_homepage', true)) {
-        return array(
-            'title' => get_the_title($post),
-            'url' => get_permalink($post),
-            'current' => false
-        );
-    }
+    // Use the existing helper function to find the department root page
+    $department_root_id = get_department_root_page_id($post->ID);
     
-    // Check if this page belongs to a department
-    $parent_id = $post->post_parent;
-    while ($parent_id) {
-        $parent = get_post($parent_id);
-        if (has_term('department-homepage', 'category', $parent) || 
-            has_term('department', 'category', $parent) ||
-            get_post_meta($parent->ID, '_is_department_homepage', true)) {
+    if ($department_root_id) {
+        $department_page = get_post($department_root_id);
+        if ($department_page) {
             return array(
-                'title' => get_the_title($parent),
-                'url' => get_permalink($parent),
+                'title' => get_the_title($department_page),
+                'url' => get_permalink($department_page),
                 'current' => false
             );
         }
-        $parent_id = $parent->post_parent;
+    }
+    
+    return null;
+}
+
+/**
+ * Get the next level after the main section (super department or equivalent)
+ */
+function get_next_level_after_section($post = null) {
+    if (!$post) {
+        global $post;
+    }
+    
+    $current_url = get_permalink($post);
+    $site_url = home_url('/');
+    
+    // Get the current page URL for more accurate detection
+    $current_page_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    
+    // Check if we're in the departments section
+    if (strpos($current_page_url, $site_url . 'departments/') === 0) {
+        $path = str_replace($site_url . 'departments/', '', $current_page_url);
+        $path_parts = explode('/', $path);
+        
+        if (!empty($path_parts[0])) {
+            $super_dept_slug = $path_parts[0];
+            
+            // Map super department slugs to display names
+            $super_dept_names = array(
+                'departments-offices' => 'Administration',
+                'sheriff' => 'Sheriff\'s Office',
+                'county-courts' => 'County Courts'
+            );
+            
+            $super_dept_name = isset($super_dept_names[$super_dept_slug]) ? $super_dept_names[$super_dept_slug] : ucwords(str_replace('-', ' ', $super_dept_slug));
+            
+            return array(
+                'title' => $super_dept_name,
+                'url' => home_url('/departments/' . $super_dept_slug . '/'),
+                'current' => false
+            );
+        }
+    }
+    
+    // Check if we're in the government section
+    if (strpos($current_page_url, $site_url . 'government/') === 0) {
+        $path = str_replace($site_url . 'government/', '', $current_page_url);
+        $path_parts = explode('/', $path);
+        
+        if (!empty($path_parts[0])) {
+            $next_level_slug = $path_parts[0];
+            $next_level_name = ucwords(str_replace('-', ' ', $next_level_slug));
+            
+            return array(
+                'title' => $next_level_name,
+                'url' => home_url('/government/' . $next_level_slug . '/'),
+                'current' => false
+            );
+        }
     }
     
     return null;
@@ -243,12 +304,27 @@ function get_department_info($post) {
 /**
  * Get section information (forms, directory, etc.)
  */
-function get_section_info($post) {
+function get_section_info($post = null) {
+    // Get current URL - use global post if none provided
+    if (!$post) {
+        global $post;
+    }
+    
     $current_url = get_permalink($post);
     $site_url = home_url('/');
     
+    // Get the current page URL for more accurate detection
+    $current_page_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    
+    // Debug output (remove this after testing)
+    if (current_user_can('administrator')) {
+        error_log('Breadcrumb Debug - Current URL: ' . $current_url);
+        error_log('Breadcrumb Debug - Page URL: ' . $current_page_url);
+        error_log('Breadcrumb Debug - Site URL: ' . $site_url);
+    }
+    
     // Check if we're in the forms section
-    if (strpos($current_url, $site_url . 'forms/') === 0) {
+    if (strpos($current_url, $site_url . 'forms/') === 0 || strpos($current_page_url, $site_url . 'forms/') === 0) {
         return array(
             'title' => esc_html__('Forms', 'citygov'),
             'url' => home_url('/forms/'),
@@ -257,7 +333,7 @@ function get_section_info($post) {
     }
     
     // Check if we're in the directory section
-    if (strpos($current_url, $site_url . 'directory/') === 0) {
+    if (strpos($current_page_url, $site_url . 'directory/') === 0) {
         return array(
             'title' => esc_html__('Directory', 'citygov'),
             'url' => home_url('/directory/'),
@@ -266,12 +342,18 @@ function get_section_info($post) {
     }
     
     // Check if we're in the documents section
-    if (strpos($current_url, $site_url . 'documents/') === 0) {
+    if (strpos($current_page_url, $site_url . 'documents/') === 0) {
         return array(
             'title' => esc_html__('Documents', 'citygov'),
             'url' => home_url('/documents/'),
             'current' => false
         );
+    }
+    
+    // Check if we're in the departments section
+    // Note: We don't add a "Departments" breadcrumb here because we'll show the super department instead
+    if (strpos($current_page_url, $site_url . 'departments/') === 0) {
+        return null; // Don't add a "Departments" breadcrumb
     }
     
     return null;
@@ -289,7 +371,7 @@ function output_breadcrumbs($breadcrumbs) {
     
     foreach ($breadcrumbs as $index => $crumb) {
         if ($index > 0) {
-            echo '<span class="breadcrumb-separator">/</span>';
+            echo '<span class="breadcrumb-separator">→</span>';
         }
         
         if ($crumb['current']) {
@@ -311,4 +393,64 @@ remove_action('wp_head', 'citygov_breadcrumbs');
  */
 function display_breadcrumbs() {
     citygov_breadcrumbs();
+}
+
+/**
+ * Temporary debug function to test breadcrumb logic
+ * Usage: <?php debug_breadcrumbs(); ?>
+ */
+function debug_breadcrumbs() {
+    global $post;
+    
+    echo '<div style="background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc;">';
+    echo '<strong>Breadcrumb Debug:</strong><br>';
+    echo 'Current URL: ' . get_permalink($post) . '<br>';
+    echo 'Site URL: ' . home_url('/') . '<br>';
+    echo 'Request URI: ' . $_SERVER['REQUEST_URI'] . '<br>';
+    echo 'Post Type: ' . get_post_type() . '<br>';
+    echo 'Is Page: ' . (is_page() ? 'Yes' : 'No') . '<br>';
+    echo 'Is Single: ' . (is_single() ? 'Yes' : 'No') . '<br>';
+    
+    $section_info = get_section_info();
+    if ($section_info) {
+        echo 'Section Info: ' . $section_info['title'] . '<br>';
+    } else {
+        echo 'Section Info: None<br>';
+    }
+    
+    $department_info = get_department_info($post);
+    if ($department_info) {
+        echo 'Department Info: ' . $department_info['title'] . '<br>';
+    } else {
+        echo 'Department Info: None<br>';
+    }
+    
+    // Debug department helper functions
+    $department_root_id = get_department_root_page_id($post->ID);
+    if ($department_root_id) {
+        echo 'Department Root ID: ' . $department_root_id . '<br>';
+        $department_page = get_post($department_root_id);
+        if ($department_page) {
+            echo 'Department Root Title: ' . get_the_title($department_page) . '<br>';
+        }
+    } else {
+        echo 'Department Root ID: None<br>';
+    }
+    
+    $department_name = get_department_root_name($post->ID);
+    if ($department_name) {
+        echo 'Department Root Name: ' . $department_name . '<br>';
+    } else {
+        echo 'Department Root Name: None<br>';
+    }
+    
+    // Debug next level detection
+    $next_level_info = get_next_level_after_section($post);
+    if ($next_level_info) {
+        echo 'Next Level: ' . $next_level_info['title'] . ' (' . $next_level_info['url'] . ')<br>';
+    } else {
+        echo 'Next Level: None<br>';
+    }
+    
+    echo '</div>';
 } 

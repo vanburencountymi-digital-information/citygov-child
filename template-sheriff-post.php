@@ -25,7 +25,7 @@ Template Post Type: post
                 <div class="entry">
 
                     <!-- Override breadcrumbs manually -->
-                    <div class="main-breadcrumbs subpage-breadcrumbs">
+                    <div class="breadcrumbs-container subpage-breadcrumbs">
                         <a href="/departments/sheriff">← Sheriff's Office</a>
                         <a href="/category/sheriff">All Sheriff's News</a>
                     </div>

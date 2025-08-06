@@ -26,7 +26,7 @@ Template Post Type: post, page, event
                 <div class="clearfix"></div>
 
                 <div class="entry">
-                    <div class="main-breadcrumbs subpage-breadcrumbs">
+                    <div class="breadcrumbs">
                         <?php citygov_breadcrumbs(); ?>
                     </div>
 
