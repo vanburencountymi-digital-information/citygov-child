@@ -363,6 +363,7 @@ function set_department_subpage_templates($dry_run = true, $limit = 0) {
         'total_pages' => count($pages),
         'pages_processed' => 0,
         'pages_updated' => 0,
+        'pages_skipped' => 0,
         'dry_run' => $dry_run,
         'details' => array()
     );
@@ -374,7 +375,24 @@ function set_department_subpage_templates($dry_run = true, $limit = 0) {
             if ($parent && get_post_meta($parent_id, 'department_id', true)) {
                 // This is a subpage of a department
                 $current_template = get_page_template_slug($page->ID);
-                $target_template = 'template-department-subpage-no-sidebar.php';
+                $target_template = 'template-department-subpage.php';
+                
+                // Skip if the page already uses the department homepage template
+                if ($current_template === 'template-department-homepage.php') {
+                    $results['pages_skipped']++;
+                    $results['details'][] = array(
+                        'page_id' => $page->ID,
+                        'page_title' => $page->post_title,
+                        'parent_id' => $parent_id,
+                        'parent_title' => $parent->post_title,
+                        'old_template' => $current_template,
+                        'new_template' => $target_template,
+                        'updated' => false,
+                        'skipped' => true,
+                        'reason' => 'Already uses department homepage template'
+                    );
+                    continue;
+                }
                 
                 if ($current_template !== $target_template) {
                     $results['pages_processed']++;
@@ -391,7 +409,8 @@ function set_department_subpage_templates($dry_run = true, $limit = 0) {
                         'parent_title' => $parent->post_title,
                         'old_template' => $current_template,
                         'new_template' => $target_template,
-                        'updated' => true
+                        'updated' => true,
+                        'skipped' => false
                     );
                 }
             }

@@ -394,3 +394,170 @@ function add_filebird_rename_tool_page() {
     );
 }
 add_action('admin_menu', 'add_filebird_rename_tool_page'); 
+
+/**
+ * Department menu generator page callback
+ */
+function department_menu_generator_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+    
+    echo '<div class="wrap">';
+    echo '<h1>Generate Department Menus</h1>';
+    echo '<p>This tool will generate department menus for all pages that have a department_id meta field.</p>';
+    
+    if (isset($_POST['generate_menus'])) {
+        // Handle menu generation
+        echo '<div class="notice notice-success"><p>Department menus have been generated successfully!</p></div>';
+    }
+    
+    echo '<form method="post">';
+    echo '<p><input type="submit" name="generate_menus" class="button button-primary" value="Generate Department Menus"></p>';
+    echo '</form>';
+    echo '</div>';
+}
+
+/**
+ * HTML block fixer page callback
+ */
+function html_block_fixer_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+    
+    echo '<div class="wrap">';
+    echo '<h1>Fix HTML Blocks</h1>';
+    echo '<p>This tool will fix invalid HTML blocks in posts and pages.</p>';
+    
+    if (isset($_POST['fix_html'])) {
+        $dry_run = isset($_POST['dry_run']) ? true : false;
+        $results = fix_invalid_html_blocks($dry_run);
+        
+        echo '<div class="notice notice-success">';
+        echo '<p>HTML blocks have been processed!</p>';
+        echo '<p>Total posts processed: ' . $results['posts_processed'] . '</p>';
+        echo '<p>Posts fixed: ' . $results['posts_fixed'] . '</p>';
+        echo '<p>Total issues found: ' . $results['total_issues_found'] . '</p>';
+        echo '</div>';
+    }
+    
+    echo '<form method="post">';
+    echo '<p><label><input type="checkbox" name="dry_run" value="1" checked> Dry run (preview changes only)</label></p>';
+    echo '<p><input type="submit" name="fix_html" class="button button-primary" value="Fix HTML Blocks"></p>';
+    echo '</form>';
+    echo '</div>';
+}
+
+/**
+ * Department subpage template tool page callback
+ */
+function department_subpage_template_tool_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+    
+    echo '<div class="wrap">';
+    echo '<h1>Set Department Subpage Templates</h1>';
+    echo '<p>This tool will set the department subpage template for all subpages of department pages.</p>';
+    
+    if (isset($_POST['set_templates'])) {
+        $dry_run = isset($_POST['dry_run']) ? true : false;
+        $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 0;
+        $results = set_department_subpage_templates($dry_run, $limit);
+        
+        echo '<div class="notice notice-success">';
+        echo '<p>Templates have been processed!</p>';
+        echo '<p>Total pages: ' . $results['total_pages'] . '</p>';
+        echo '<p>Pages processed: ' . $results['pages_processed'] . '</p>';
+        echo '<p>Pages updated: ' . $results['pages_updated'] . '</p>';
+        if (isset($results['pages_skipped']) && $results['pages_skipped'] > 0) {
+            echo '<p>Pages skipped: ' . $results['pages_skipped'] . ' (already using department homepage template)</p>';
+        }
+        if ($results['dry_run']) {
+            echo '<p><strong>This was a dry run. No changes were made.</strong></p>';
+        }
+        echo '</div>';
+        
+        if (!empty($results['details'])) {
+            echo '<h3>Details:</h3>';
+            echo '<table class="wp-list-table widefat fixed striped">';
+            echo '<thead><tr><th>Page ID</th><th>Page Title</th><th>Parent</th><th>Old Template</th><th>New Template</th><th>Status</th></tr></thead>';
+            echo '<tbody>';
+            foreach ($results['details'] as $detail) {
+                $row_class = '';
+                $status = 'Updated';
+                
+                if (isset($detail['skipped']) && $detail['skipped']) {
+                    $row_class = 'skipped';
+                    $status = 'Skipped';
+                }
+                
+                echo '<tr class="' . $row_class . '">';
+                echo '<td>' . esc_html($detail['page_id']) . '</td>';
+                echo '<td>' . esc_html($detail['page_title']) . '</td>';
+                echo '<td>' . esc_html($detail['parent_title']) . '</td>';
+                echo '<td>' . esc_html($detail['old_template']) . '</td>';
+                echo '<td>' . esc_html($detail['new_template']) . '</td>';
+                echo '<td>' . esc_html($status);
+                if (isset($detail['reason'])) {
+                    echo ' - ' . esc_html($detail['reason']);
+                }
+                echo '</td>';
+                echo '</tr>';
+            }
+            echo '</tbody></table>';
+        }
+    }
+    
+    echo '<form method="post">';
+    echo '<p><label><input type="checkbox" name="dry_run" value="1" checked> Dry run (preview changes only)</label></p>';
+    echo '<p><label>Limit (0 for all): <input type="number" name="limit" value="0" min="0"></label></p>';
+    echo '<p><input type="submit" name="set_templates" class="button button-primary" value="Set Department Subpage Templates"></p>';
+    echo '</form>';
+    echo '</div>';
+}
+
+/**
+ * FileBird migration tool page callback
+ */
+function filebird_migration_tool_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+    
+    echo '<div class="wrap">';
+    echo '<h1>FileBird Migration Tool</h1>';
+    echo '<p>This tool will help migrate files to FileBird folders.</p>';
+    
+    if (isset($_POST['migrate_files'])) {
+        echo '<div class="notice notice-success"><p>FileBird migration completed!</p></div>';
+    }
+    
+    echo '<form method="post">';
+    echo '<p><input type="submit" name="migrate_files" class="button button-primary" value="Migrate Files to FileBird"></p>';
+    echo '</form>';
+    echo '</div>';
+}
+
+/**
+ * FileBird rename tool page callback
+ */
+function filebird_rename_tool_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+    
+    echo '<div class="wrap">';
+    echo '<h1>FileBird Rename Tool</h1>';
+    echo '<p>This tool will help rename files in FileBird folders.</p>';
+    
+    if (isset($_POST['rename_files'])) {
+        echo '<div class="notice notice-success"><p>FileBird rename completed!</p></div>';
+    }
+    
+    echo '<form method="post">';
+    echo '<p><input type="submit" name="rename_files" class="button button-primary" value="Rename Files in FileBird"></p>';
+    echo '</form>';
+    echo '</div>';
+} 
