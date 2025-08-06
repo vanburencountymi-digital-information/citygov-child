@@ -98,6 +98,12 @@ function vbc_register_assets() {
             'src' => '/css/pagelist-accordion.css',
             'deps' => [],
             'ver' => wp_get_theme()->get('Version')
+        ],
+        'breadcrumb-styles' => [
+            'type' => 'style',
+            'src' => '/css/breadcrumbs.css',
+            'deps' => [],
+            'ver' => wp_get_theme()->get('Version')
         ]
     ];
     
