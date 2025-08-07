@@ -24,13 +24,13 @@ function get_department_root_page_id($post_id = null) {
     if ($post_id === null) {
         global $post;
         if (!$post) {
-            error_log("get_department_root_page_id: No current post found");
+            // error_log("get_department_root_page_id: No current post found");
             return null;
         }
         $post_id = $post->ID;
     }
     
-    error_log("get_department_root_page_id: Starting with post_id = {$post_id}");
+    // error_log("get_department_root_page_id: Starting with post_id = {$post_id}");
     
     // Start with the current page
     $current_id = $post_id;
@@ -42,7 +42,7 @@ function get_department_root_page_id($post_id = null) {
         error_log("get_department_root_page_id: Checking page {$current_id}, department_id = '{$department_id}'");
         
         if (!empty($department_id)) {
-            error_log("get_department_root_page_id: Found department_id '{$department_id}' on page {$current_id}");
+            // error_log("get_department_root_page_id: Found department_id '{$department_id}' on page {$current_id}");
             return $current_id; // Return the page ID, not the department_id value
         }
         
@@ -52,7 +52,7 @@ function get_department_root_page_id($post_id = null) {
         
         if ($parent_id === 0) {
             // We've reached the top of the hierarchy
-            error_log("get_department_root_page_id: Reached top of hierarchy, no department_id found");
+            // error_log("get_department_root_page_id: Reached top of hierarchy, no department_id found");
             break;
         }
         
@@ -60,7 +60,7 @@ function get_department_root_page_id($post_id = null) {
     }
     
     // No department_id found in the entire hierarchy
-    error_log("get_department_root_page_id: No department_id found in hierarchy starting from {$post_id}");
+    // error_log("get_department_root_page_id: No department_id found in hierarchy starting from {$post_id}");
     return null;
 }
 

@@ -24,7 +24,7 @@ $current_department_id = $department_id;
         // Display department menu if we have a department context (desktop only)
         if (!empty($department_root_page_id)) {
             echo '<div class="department-menu-section desktop-only">';
-            echo '<h2>Department Menu</h2>';
+            echo '<h2>' . $department_root_name . ' Menu</h2>';
             
             // Get the department ID from the root page
             $dept_id = get_post_meta($department_root_page_id, 'department_id', true);

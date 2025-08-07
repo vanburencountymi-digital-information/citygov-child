@@ -76,8 +76,10 @@ function get_page_breadcrumbs() {
     }
     
     // Check if this is a department page or related to a department
+    // Only add department info if we're not in a section that already has next_level_info
+    // and if we're not already on the department homepage
     $department_info = get_department_info($post);
-    if ($department_info) {
+    if ($department_info && !$next_level_info) {
         // Only add department info if we're not already on the department homepage
         if ($department_info['url'] !== get_permalink($post)) {
             $breadcrumbs[] = $department_info;
@@ -296,6 +298,15 @@ function get_next_level_after_section($post = null) {
                 'current' => false
             );
         }
+    }
+
+    // Check if we're in the visitors section
+    if (strpos($current_page_url, $site_url . 'visitors/') === 0) {
+        return array(
+            'title' => esc_html__('Visitors', 'citygov'),
+            'url' => home_url('/visitors/'),
+            'current' => false
+        );
     }
     
     return null;

@@ -11,7 +11,7 @@
     <div class="popup-overlay"></div>
     <div class="popup-content">
         <div class="popup-header">
-            <h2>Department Menu</h2>
+            <h2><?php echo $department_root_name; ?> Menu</h2>
             <button class="popup-close" aria-label="Close department menu">
                 <span class="close-icon">×</span>
             </button>

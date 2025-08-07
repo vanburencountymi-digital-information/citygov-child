@@ -19,12 +19,13 @@
         <?php
         // Only show department menu button if we're in a department context
         $department_root_id = get_department_root_id();
+        $department_root_name = get_department_root_name();
         if (!empty($department_root_id)) :
         ?>
         <div class="mobile-menu-item">
             <button onclick="openDepartmentMenu()" class="mobile-menu-button">
                 <span class="menu-icon">📋</span>
-                <span class="menu-text">Department Menu</span>
+                <span class="menu-text"><?php echo $department_root_name; ?> Menu</span>
             </button>
         </div>
         <?php endif; ?>
