@@ -5,6 +5,10 @@
  * This template creates a mobile popup that displays the department menu
  * when triggered from the mobile footer menu.
  */
+
+// Get department context before output so header can use it
+$department_root_page_id = get_department_root_page_id();
+$department_root_name = get_department_root_name();
 ?>
 
 <div id="department-menu-popup" class="mobile-popup hidden">
@@ -19,10 +23,6 @@
         
         <div class="popup-body">
             <?php
-            // Get department context using the new function
-            $department_root_page_id = get_department_root_page_id();
-            $department_root_name = get_department_root_name();
-
             // Display department menu if we have a department context
             if (!empty($department_root_page_id)) {
                 // Get the department ID from the root page
@@ -69,6 +69,10 @@ document.addEventListener("DOMContentLoaded", function() {
     window.openDepartmentMenu = function() {
         popup.classList.remove('hidden');
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        // Ensure accordion initialized (in case of late DOM)
+        if (window.initDepartmentAccordion) {
+            window.initDepartmentAccordion(popup);
+        }
     };
     
     // Function to close popup

@@ -1648,6 +1648,76 @@ body.single-dlp_document .dlp-download-button:hover {
     border-bottom: none;
 }
 
+/* Collapsible behavior and toggle styles for Department Menu (sidebar) */
+.department-menu-section .department-menu-list li {
+    position: relative;
+    padding-right: 34px; /* room for toggle */
+}
+
+.department-menu-section .department-menu-list .sub-menu {
+    display: none; /* collapsed by default */
+}
+
+.department-menu-section .department-menu-list li.expanded > ul.sub-menu {
+    display: block; /* show when expanded */
+}
+
+.department-menu-section .department-menu-list button.department-toggle {
+    position: absolute;
+    right: 6px;
+    top: 10px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border: none;
+    background: #f1f3f5;
+    color: #333;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+}
+
+.department-menu-section .department-menu-list li.expanded > button.department-toggle {
+    background: #e9ecef;
+}
+
+/* Collapsible behavior and toggle styles for Department Menu (mobile popup) */
+.popup-body .department-menu-list li {
+    position: relative;
+    padding-right: 34px; /* room for toggle */
+}
+
+.popup-body .department-menu-list .sub-menu {
+    display: none; /* collapsed by default */
+}
+
+.popup-body .department-menu-list li.expanded > ul.sub-menu {
+    display: block; /* show when expanded */
+}
+
+.popup-body .department-menu-list button.department-toggle {
+    position: absolute;
+    right: 6px;
+    top: 8px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border: none;
+    background: #f1f3f5;
+    color: #333;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+}
+
+.popup-body .department-menu-list li.expanded > button.department-toggle {
+    background: #e9ecef;
+}
+
 /* Responsive adjustments for department menu */
 @media (max-width: 768px) {
     .department-menu-section {
@@ -2219,4 +2289,10 @@ body.single-dlp_document .dlp-download-button:hover {
         width: 100%;
         text-align: center;
     }
+}  
+
+/* Remove parent-theme submenu arrows inside Department Menus only */
+.department-menu-section .department-menu-list .menu-item-has-children > a::after,
+.popup-body .department-menu-list .menu-item-has-children > a::after {
+    content: none !important;
 }  
