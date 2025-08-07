@@ -75,11 +75,16 @@ function get_page_breadcrumbs() {
         $breadcrumbs[] = $next_level_info;
     }
     
+    // Determine if we're in the government section to avoid duplicate crumbs there
+    $site_url = home_url('/');
+    $current_page_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    $in_government = (strpos($current_page_url, $site_url . 'government/') === 0);
+    
     // Check if this is a department page or related to a department
-    // Only add department info if we're not in a section that already has next_level_info
-    // and if we're not already on the department homepage
+    // For department pages, include the department breadcrumb even if a super department crumb exists
+    // But suppress department breadcrumb when in the government section to prevent duplicates
     $department_info = get_department_info($post);
-    if ($department_info && !$next_level_info) {
+    if ($department_info && !$in_government) {
         // Only add department info if we're not already on the department homepage
         if ($department_info['url'] !== get_permalink($post)) {
             $breadcrumbs[] = $department_info;
