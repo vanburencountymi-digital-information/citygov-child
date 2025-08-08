@@ -2296,3 +2296,189 @@ body.single-dlp_document .dlp-download-button:hover {
 .popup-body .department-menu-list .menu-item-has-children > a::after {
     content: none !important;
 }  
+
+/* ==========================================================================
+   12. Figures and Captions
+   ========================================================================== */
+
+/* Base figure styling (also targets WordPress captions) */
+figure,
+.wp-caption {
+  display: block;
+  margin: 1.5rem auto;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  overflow: hidden;
+  max-width: 100%;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+figure:hover,
+.wp-caption:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+/* Ensure images fill the figure nicely */
+figure img,
+.wp-caption img {
+  display: block;
+  width: 98%;
+  height: auto;
+  margin: .5rem auto;
+  padding: 0;
+  border-radius: 0; /* image edges align with container radius */
+}
+
+/* Caption styling */
+figcaption,
+.wp-caption-text {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #6d5c52;
+  background: #f8f9fa;
+  border-top: 1px solid rgba(0,0,0,0.06);
+  text-align: center;
+}
+
+/* Optional subtle accent bar on top edge of figure */
+figure::before,
+.wp-caption::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, #a3473b, #cbab7a);
+}
+
+/* Alignment helpers (matches common WP alignment classes) */
+figure.alignleft,
+.wp-caption.alignleft {
+  float: left;
+  margin: 0.25rem 1rem 1rem 0;
+  max-width: 50%;
+}
+
+figure.alignright,
+.wp-caption.alignright {
+  float: right;
+  margin: 0.25rem 0 1rem 1rem;
+  max-width: 50%;
+}
+
+figure.aligncenter,
+.wp-caption.aligncenter {
+  margin-left: auto;
+  margin-right: auto;
+  float: none;
+}
+
+/* Responsive: drop floats and use full width on small screens */
+@media (max-width: 768px) {
+  figure.alignleft,
+  .wp-caption.alignleft,
+  figure.alignright,
+  .wp-caption.alignright {
+    float: none;
+    margin: 1rem 0;
+    max-width: 100%;
+  }
+}  
+
+/* ==========================================================================
+   0. Design Tokens — Color System
+   ========================================================================== */
+:root {
+  --color-brand-primary: #a3473b;
+  --color-brand-primary-dark: #902f29;
+  --color-brand-accent: #cbab7a;
+  --color-brand-blue: #0073aa;
+  --color-brand-blue-dark: #005077;
+  --color-brand-navy: #002b45;
+  --color-brand-dark-red: #8B0000;
+
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-muted: #777777;
+  --color-text-accent: #6d5c52;
+  --color-text-alt-muted: #8b8278;
+
+  --color-surface: #ffffff;
+  --color-surface-alt: #f9f9f9;
+  --color-surface-soft: #f9f7f4;
+  --color-surface-soft-2: #f9f6f6;
+  --color-bg-muted: #f5f5f5;
+  --color-bg-muted-2: #f0f0f0;
+  --color-bg-muted-3: #f8f9fa;
+
+  --color-border: #e0e0e0;
+  --color-border-strong: #dddddd;
+  --color-border-subtle: #eeeeee;
+  --color-border-accent: #e1e5e9;
+
+  --color-accent-blue-grey: #b3c7d6;
+  --color-accent-olive-grey: #7a8c85;
+  --color-accent-beige: #b5a382;
+  --color-accent-gold-dark: #b58d4a;
+
+  --color-black: #000000;
+  --color-white: #ffffff;
+}
+
+/* ==========================================================================
+   Apply color variables to common components (non-breaking overrides)
+   ========================================================================== */
+
+/* Figures (override to use tokens) */
+figure,
+.wp-caption {
+  background: var(--color-surface);
+}
+figcaption,
+.wp-caption-text {
+  color: var(--color-text-accent);
+  background: var(--color-bg-muted-3);
+}
+figure::before,
+.wp-caption::before {
+  background: linear-gradient(90deg, var(--color-brand-primary), var(--color-brand-accent));
+}
+
+/* Navigation chips/buttons */
+.department-navigation a {
+  background-color: var(--color-brand-primary);
+}
+.department-navigation a:hover,
+.department-navigation a:focus {
+  background-color: var(--color-brand-primary-dark);
+}
+
+.sheriff-article .main-breadcrumbs a {
+  background-color: var(--color-brand-primary);
+}
+.sheriff-article .main-breadcrumbs a:hover,
+.sheriff-article .main-breadcrumbs a:focus {
+  background-color: var(--color-brand-primary-dark);
+}
+
+/* Titles and accents */
+.nav-title { color: var(--color-brand-primary); }
+.similar-posts-title { color: var(--color-brand-primary); border-bottom-color: var(--color-brand-accent); }
+.department-header__title { color: var(--color-brand-navy); }
+
+/* Generic buttons */
+.button, .admin-button { background: var(--color-brand-blue); }
+.button:hover, .admin-button:hover { background: var(--color-brand-blue-dark); }
+
+/* Download button */
+.download-button { background: var(--color-accent-blue-grey); color: var(--color-text-primary); }
+.download-button:hover { background: var(--color-accent-olive-grey); color: var(--color-white); }
+
+/* Podcast controls */
+.controls button { color: var(--color-brand-primary); }
+.controls button:hover { background: var(--color-brand-accent); border-color: var(--color-text-accent); color: var(--color-white); }
+.controls button#playPause { background: var(--color-brand-primary); border-color: var(--color-text-accent); color: var(--color-white); }
+.controls button#playPause:hover { background: var(--color-accent-gold-dark); }  
