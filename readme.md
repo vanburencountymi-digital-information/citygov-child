@@ -90,7 +90,39 @@ The CityGov Child Theme is a custom WordPress theme built on top of the CityGov 
   - `exclude` - IDs of pages to exclude
   - Plus all standard parameters from the original shortcode
 
+### 3. `[events_by_series]` Shortcode
+- **Purpose**: Renders a simple list of events that belong to a specific Series (The Events Calendar).
+- **Function**: `events_by_series_shortcode()`
+- **Requirements**:
+  - The Events Calendar plugin must be active and its Series taxonomy (`tribe_series`) available.
+- **Parameters**:
+  - `series_id` (required): Numeric ID of the Series term to display events from
+  - `limit` (default: 10): Maximum number of events to display
+  - `order` (default: `ASC`): Sort direction by event start date (`ASC` or `DESC`)
+  - `future_only` (default: `1`): `1` to only show upcoming events; `0` to include past events
+  - `show_time` (default: `1`): `1` to append event time to the date; `0` to show date only
+- **Usage**:
+  ```text
+  [events_by_series series_id="123"]
+  [events_by_series series_id="123" limit="5" order="DESC" future_only="1" show_time="0"]
+  ```
+- **Notes**:
+  - To find a Series ID, go to Events → Series in the WordPress admin and inspect the URL when editing/hovering a Series; the ID appears as `tag_ID`/`term_id` in the URL.
+  - Output markup is an unordered list with class `events-by-series`.
+
 ### Usage Examples:
+- **pagelist_ext**
+  ```text
+  [pagelist_ext accordion_subpages="1" show_image="0" limit_content="200"]
+  ```
+- **subpages**
+  ```text
+  [subpages accordion_subpages="1" sort_order="ASC" sort_column="menu_order"]
+  ```
+- **events_by_series**
+  ```text
+  [events_by_series series_id="123" limit="5" order="ASC" future_only="1" show_time="1"]
+  ```
 
 ## Plugin Interactions
 - **Page List Plugin**

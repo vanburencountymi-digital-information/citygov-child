@@ -513,4 +513,77 @@ function my_custom_subpages_shortcode($atts) {
 
 // Register the custom subpages shortcode
 add_shortcode('subpages', 'my_custom_subpages_shortcode');
-add_shortcode('sub_pages', 'my_custom_subpages_shortcode'); 
+add_shortcode('sub_pages', 'my_custom_subpages_shortcode');
+
+/**
+ * [events_by_series series_id="123" limit="10" order="ASC" future_only="1"]
+ * Renders a simple list of events in a Series.
+ */
+function events_by_series_shortcode($atts) {
+    $atts = shortcode_atts([
+        'series_id'   => 0,        // required
+        'limit'       => 10,
+        'order'       => 'ASC',    // ASC|DESC by start date
+        'future_only' => '1',      // filter to upcoming only
+        'show_time'   => '1',
+    ], $atts, 'events_by_series');
+
+    $series_id = absint($atts['series_id']);
+    if (!$series_id) return '<em>No series_id provided.</em>';
+
+    $series_tax = 'tribe_series';
+    if (!taxonomy_exists($series_tax)) {
+        return '<em>Series taxonomy not found.</em>';
+    }
+
+    // Base query: all events in this Series
+    $q = new WP_Query([
+        'post_type'      => 'tribe_events',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'tax_query'      => [[
+            'taxonomy' => $series_tax,
+            'field'    => 'term_id',
+            'terms'    => [$series_id],
+        ]],
+    ]);
+
+    $events = $q->posts;
+
+    // Optional: keep only upcoming + sort by start date (uses TEC helpers if available)
+    if (function_exists('tribe_get_start_date')) {
+        if ($atts['future_only'] === '1') {
+            $events = array_filter($events, function ($e) {
+                return (int) tribe_get_start_date($e->ID, false, 'U') >= time();
+            });
+        }
+        usort($events, function ($a, $b) use ($atts) {
+            $a_s = (int) tribe_get_start_date($a->ID, false, 'U');
+            $b_s = (int) tribe_get_start_date($b->ID, false, 'U');
+            return strtoupper($atts['order']) === 'DESC' ? $b_s <=> $a_s : $a_s <=> $b_s;
+        });
+    }
+
+    if (empty($events)) return '<em>No events found.</em>';
+
+    $events = array_slice($events, 0, (int) $atts['limit']);
+
+    ob_start();
+    echo '<ul class="events-by-series">';
+    foreach ($events as $e) {
+        $title = esc_html(get_the_title($e));
+        $url   = esc_url(get_permalink($e));
+        echo "<li><a href=\"{$url}\">{$title}</a>";
+
+        if (function_exists('tribe_get_start_date')) {
+            $fmt  = get_option('date_format') . ($atts['show_time'] === '1' ? ' ' . get_option('time_format') : '');
+            $date = esc_html(tribe_get_start_date($e->ID, false, $fmt));
+            echo " — {$date}";
+        }
+
+        echo "</li>";
+    }
+    echo '</ul>';
+    return ob_get_clean();
+}
+add_shortcode('events_by_series', 'events_by_series_shortcode');
