@@ -396,6 +396,20 @@ function add_filebird_rename_tool_page() {
 add_action('admin_menu', 'add_filebird_rename_tool_page'); 
 
 /**
+ * Add HTML fixer tester page
+ */
+function add_html_fixer_tester_page() {
+    add_management_page(
+        'HTML Fixer Tester',
+        'HTML Fixer Tester',
+        'manage_options',
+        'html-fixer-tester',
+        'html_fixer_tester_page'
+    );
+}
+add_action('admin_menu', 'add_html_fixer_tester_page');
+
+/**
  * Department menu generator page callback
  */
 function department_menu_generator_page() {
@@ -432,19 +446,116 @@ function html_block_fixer_page() {
     
     if (isset($_POST['fix_html'])) {
         $dry_run = isset($_POST['dry_run']) ? true : false;
-        $results = fix_invalid_html_blocks($dry_run);
+        $limit = isset($_POST['limit']) ? max(0, intval($_POST['limit'])) : 0;
+        $post_types = isset($_POST['post_types']) && is_array($_POST['post_types']) ? array_map('sanitize_text_field', $_POST['post_types']) : array('post','page');
+        $post_statuses = isset($_POST['post_statuses']) && is_array($_POST['post_statuses']) ? array_map('sanitize_text_field', $_POST['post_statuses']) : array('publish');
+
+        $results = fix_invalid_html_blocks($dry_run, $post_types, $limit, $post_statuses);
         
         echo '<div class="notice notice-success">';
         echo '<p>HTML blocks have been processed!</p>';
-        echo '<p>Total posts processed: ' . $results['posts_processed'] . '</p>';
-        echo '<p>Posts fixed: ' . $results['posts_fixed'] . '</p>';
-        echo '<p>Total issues found: ' . $results['total_issues_found'] . '</p>';
+        echo '<p>Total posts found: ' . intval($results['total_posts']) . '</p>';
+        echo '<p>Posts processed: ' . intval($results['posts_processed']) . '</p>';
+        echo '<p>Posts fixed: ' . intval($results['posts_fixed']) . '</p>';
+        echo '<p>Total issues found: ' . intval($results['total_issues_found']) . '</p>';
+        if ($results['dry_run']) {
+            echo '<p><strong>This was a dry run. No changes were made.</strong></p>';
+        }
         echo '</div>';
+
+        if (!empty($results['details'])) {
+            echo '<h3>Details</h3>';
+            echo '<table class="wp-list-table widefat fixed striped">';
+            echo '<thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Issues</th><th>Changed</th></tr></thead>';
+            echo '<tbody>';
+            foreach ($results['details'] as $detail) {
+                $post_obj = get_post($detail['page_id']);
+                $type = $post_obj ? $post_obj->post_type : '';
+                $issues = isset($detail['issues_found']['total_fixes']) ? intval($detail['issues_found']['total_fixes']) : 0;
+                echo '<tr>';
+                echo '<td>' . intval($detail['page_id']) . '</td>';
+                echo '<td>' . esc_html($detail['page_title']) . '</td>';
+                echo '<td>' . esc_html($type) . '</td>';
+                echo '<td>' . $issues . '</td>';
+                echo '<td>' . ($detail['content_changed'] ? 'Yes' : 'No') . '</td>';
+                echo '</tr>';
+            }
+            echo '</tbody></table>';
+        }
     }
+    
+    // Fetch public post types for selection
+    $public_types = get_post_types(array('public' => true), 'objects');
     
     echo '<form method="post">';
     echo '<p><label><input type="checkbox" name="dry_run" value="1" checked> Dry run (preview changes only)</label></p>';
+
+    echo '<p><label>Limit (0 for all): <input type="number" name="limit" value="0" min="0"></label></p>';
+
+    echo '<h3>Post Types</h3>';
+    echo '<p>';
+    foreach ($public_types as $type) {
+        echo '<label style="margin-right:12px;"><input type="checkbox" name="post_types[]" value="' . esc_attr($type->name) . '" ' . checked(in_array($type->name, array('post','page'), true), true, false) . '> ' . esc_html($type->labels->singular_name) . '</label>';
+    }
+    echo '</p>';
+
+    echo '<h3>Statuses</h3>';
+    $all_statuses = array('publish','draft','pending','future','private');
+    echo '<p>';
+    foreach ($all_statuses as $status) {
+        echo '<label style="margin-right:12px;"><input type="checkbox" name="post_statuses[]" value="' . esc_attr($status) . '" ' . checked($status === 'publish', true, false) . '> ' . esc_html(ucfirst($status)) . '</label>';
+    }
+    echo '</p>';
+
     echo '<p><input type="submit" name="fix_html" class="button button-primary" value="Fix HTML Blocks"></p>';
+    echo '</form>';
+    echo '</div>';
+}
+
+/**
+ * HTML fixer tester page callback
+ */
+function html_fixer_tester_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+
+    $input = '';
+    $fixed = '';
+    $issues = null;
+
+    if (isset($_POST['run_html_fixer'])) {
+        check_admin_referer('html_fixer_tester_action');
+        $input = isset($_POST['html_input']) ? wp_unslash($_POST['html_input']) : '';
+        $fixed = fix_single_post_html($input);
+        $issues = count_html_issues($input, $fixed);
+    }
+
+    echo '<div class="wrap">';
+    echo '<h1>HTML Fixer Tester</h1>';
+    echo '<p>Paste any HTML below and run the fixer to see the normalized output. Nothing is saved.</p>';
+
+    echo '<form method="post">';
+    wp_nonce_field('html_fixer_tester_action');
+
+    echo '<h3>Input HTML</h3>';
+    echo '<p><textarea name="html_input" rows="14" style="width:100%; font-family: monospace;">' . esc_textarea($input) . '</textarea></p>';
+
+    echo '<p><input type="submit" name="run_html_fixer" class="button button-primary" value="Run Fixer"></p>';
+
+    if ($issues !== null) {
+        echo '<h3>Results</h3>';
+        echo '<ul>';
+        echo '<li><strong>Unclosed tags (estimated):</strong> ' . intval($issues['unclosed_tags']) . '</li>';
+        echo '<li><strong>Malformed attributes:</strong> ' . intval($issues['malformed_attributes']) . '</li>';
+        echo '<li><strong>Empty elements:</strong> ' . intval($issues['empty_elements']) . '</li>';
+        echo '<li><strong>Total fixes (estimated):</strong> ' . intval($issues['total_fixes']) . '</li>';
+        echo '</ul>';
+
+        echo '<h3>Fixed HTML</h3>';
+        echo '<p><textarea rows="14" style="width:100%; font-family: monospace;" readonly>' . esc_textarea($fixed) . '</textarea></p>';
+    }
+
     echo '</form>';
     echo '</div>';
 }

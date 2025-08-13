@@ -180,48 +180,146 @@ function generate_directory_slug($name) {
  * @return string The fixed content
  */
 function fix_single_post_html($content) {
-    // Common HTML issues and their fixes
-    $fixes = array(
-        // Fix unclosed tags
-        '/<([a-z][a-z0-9]*)[^>]*>(?!.*<\/\1>)/i' => function($matches) {
-            $tag = $matches[1];
-            $self_closing_tags = array('img', 'br', 'hr', 'input', 'meta', 'link');
-            if (in_array(strtolower($tag), $self_closing_tags)) {
-                return $matches[0];
+    // Fast path for non-strings or empty content
+    if (!is_string($content) || $content === '') {
+        return $content;
+    }
+
+    libxml_use_internal_errors(true);
+    $dom = new DOMDocument('1.0', 'UTF-8');
+
+    $wrapper_id = '__wp_fix_wrapper__';
+    $wrapped = '<div id="' . $wrapper_id . '">' . $content . '</div>';
+
+    // Load as HTML fragment while preserving UTF-8
+    $dom->loadHTML('<?xml encoding="utf-8" ?>' . $wrapped, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+    $xpath = new DOMXPath($dom);
+    $wrapper = $xpath->query('//*[@id="' . $wrapper_id . '"]')->item(0);
+
+    if (!$wrapper) {
+        libxml_clear_errors();
+        return $content;
+    }
+
+    // Pass 0: remove Gutenberg paragraph block comments only (<!-- wp:paragraph -->, <!-- /wp:paragraph -->)
+    $comments = $xpath->query('//comment()');
+    if ($comments && $comments->length > 0) {
+        $toRemove = array();
+        foreach ($comments as $comment) {
+            $text = trim($comment->nodeValue);
+            if (preg_match('/^\/?wp:paragraph\b/i', $text)) {
+                $toRemove[] = $comment;
             }
-            return $matches[0] . '</' . $tag . '>';
-        },
-        
-        // Fix malformed attributes
-        '/\s+([a-z-]+)\s*=\s*["\']\s*["\']/i' => '$1=""',
-        
-        // Fix double quotes in attributes
-        '/\s+([a-z-]+)\s*=\s*["\']([^"\']*)"([^"\']*)["\']/i' => '$1="$2$3"',
-        
-        // Fix unescaped quotes in content
-        '/<([^>]*)"([^>]*)>/' => '<$1&quot;$2>',
-        
-        // Fix malformed list items
-        '/<li[^>]*>\s*<\/li>/' => '',
-        
-        // Fix empty paragraphs
-        '/<p[^>]*>\s*<\/p>/' => '',
-        
-        // Fix malformed links
-        '/<a[^>]*>\s*<\/a>/' => '',
-    );
-    
-    $fixed_content = $content;
-    
-    foreach ($fixes as $pattern => $replacement) {
-        if (is_callable($replacement)) {
-            $fixed_content = preg_replace_callback($pattern, $replacement, $fixed_content);
-        } else {
-            $fixed_content = preg_replace($pattern, $replacement, $fixed_content);
+        }
+        foreach ($toRemove as $node) {
+            if ($node->parentNode) {
+                $node->parentNode->removeChild($node);
+            }
         }
     }
-    
-    return $fixed_content;
+
+    $block_tags = array(
+        'address','article','aside','blockquote','canvas','dd','div','dl','dt','fieldset',
+        'figcaption','figure','footer','form','h1','h2','h3','h4','h5','h6','header','hgroup',
+        'hr','li','main','nav','noscript','ol','output','p','pre','section','table','tfoot','ul','video'
+    );
+
+    $is_block = function($node) use ($block_tags) {
+        return $node instanceof DOMElement && in_array(strtolower($node->tagName), $block_tags, true);
+    };
+
+    // Pass 1: unwrap block-level elements that are nested inside <p>
+    $paragraphs = array();
+    foreach ($wrapper->getElementsByTagName('p') as $pNode) {
+        $paragraphs[] = $pNode; // Snapshot, as we'll be modifying the DOM
+    }
+
+    foreach ($paragraphs as $p) {
+        if (!$p->parentNode) {
+            continue;
+        }
+
+        $buffer = $dom->createDocumentFragment();
+        $hasInlineContent = false;
+
+        for ($child = $p->firstChild; $child; $child = $next) {
+            $next = $child->nextSibling;
+
+            if ($is_block($child)) {
+                // Flush buffered inline content before moving the block out
+                if ($buffer->hasChildNodes() && $hasInlineContent) {
+                    $newP = $dom->createElement('p');
+                    $newP->appendChild($buffer);
+                    $p->parentNode->insertBefore($newP, $p);
+                }
+                $buffer = $dom->createDocumentFragment();
+                $hasInlineContent = false;
+
+                $p->parentNode->insertBefore($child, $p);
+                continue;
+            }
+
+            $buffer->appendChild($child);
+            if ($child instanceof DOMText) {
+                if (trim($child->wholeText) !== '') {
+                    $hasInlineContent = true;
+                }
+            } else {
+                $hasInlineContent = true;
+            }
+        }
+
+        // If we accumulated inline content, keep it in a new <p>
+        if ($buffer->hasChildNodes() && $hasInlineContent) {
+            $newP = $dom->createElement('p');
+            $newP->appendChild($buffer);
+            $p->parentNode->insertBefore($newP, $p);
+        }
+
+        // Remove the original (now-empty) <p>
+        if ($p->parentNode) {
+            $p->parentNode->removeChild($p);
+        }
+    }
+
+    // Pass 2: remove empty paragraphs (only whitespace and/or <br>)
+    $paragraphs = array();
+    foreach ($wrapper->getElementsByTagName('p') as $pNode) {
+        $paragraphs[] = $pNode;
+    }
+
+    foreach ($paragraphs as $p) {
+        if (!$p->parentNode) {
+            continue;
+        }
+        $onlyWhitespaceOrBreaks = true;
+        for ($child = $p->firstChild; $child; $child = $child->nextSibling) {
+            if ($child instanceof DOMText) {
+                if (trim($child->wholeText, "\xC2\xA0 \t\r\n") !== '') {
+                    $onlyWhitespaceOrBreaks = false;
+                    break;
+                }
+            } elseif ($child instanceof DOMElement && strtolower($child->tagName) === 'br') {
+                continue;
+            } else {
+                $onlyWhitespaceOrBreaks = false;
+                break;
+            }
+        }
+        if ($onlyWhitespaceOrBreaks && $p->parentNode) {
+            $p->parentNode->removeChild($p);
+        }
+    }
+
+    // Extract inner HTML of wrapper
+    $output = '';
+    foreach ($wrapper->childNodes as $child) {
+        $output .= $dom->saveHTML($child);
+    }
+
+    libxml_clear_errors();
+    return $output;
 }
 
 /**
@@ -302,12 +400,13 @@ function fix_single_page_html_blocks($page_id, $dry_run = true) {
  * @param bool $dry_run Whether to perform a dry run
  * @param array $post_types Array of post types to process
  * @param int $limit Maximum number of posts to process
+ * @param array $post_statuses Array of post statuses to include (default: array('publish'))
  * @return array Results of the fix operation
  */
-function fix_invalid_html_blocks($dry_run = true, $post_types = array('post', 'page'), $limit = 0) {
+function fix_invalid_html_blocks($dry_run = true, $post_types = array('post', 'page'), $limit = 0, $post_statuses = array('publish')) {
     $args = array(
         'post_type' => $post_types,
-        'post_status' => 'publish',
+        'post_status' => $post_statuses,
         'posts_per_page' => $limit > 0 ? $limit : -1,
         'orderby' => 'ID',
         'order' => 'ASC'
