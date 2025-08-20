@@ -1,7 +1,7 @@
 /*
 Theme Name: CityGov Child
 Template: citygov
-Version: 1.0
+Version: 1.1.1
 
 TABLE OF CONTENTS:
 1. General Styles
@@ -209,7 +209,7 @@ body.post-template-template-department-blog-single-page * {
 }
 
 body.post-template-template-department-blog-single-page .content-area {
-  background-color: rgba(10,10,10,0.05);
+  background-color: #fff;
 }
 
 body.post-template-template-department-blog-single-page h1 {
@@ -389,7 +389,7 @@ div.entry-meta {
 
 /* 4.3.2 General Department Blog Post Styling: Header */
 .department-header {
-  background-color: #f5f5f5;
+  background-color: #fff;
   padding: 2rem 1rem;
   font-family: 'Helvetica Neue', sans-serif;
   width: 100%;

@@ -54,7 +54,7 @@ function vbc_register_assets() {
             'type' => 'script',
             'src' => '/js/external-link-warning.js',
             'deps' => [],
-            'ver' => null,
+            'ver' => filemtime(get_stylesheet_directory() . '/js/external-link-warning.js'),
             'footer' => true
         ],
         'auto-anchor-offset' => [

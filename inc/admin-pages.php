@@ -672,3 +672,124 @@ function filebird_rename_tool_page() {
     echo '</form>';
     echo '</div>';
 } 
+
+/**
+ * Add block converter page
+ */
+function add_block_converter_page() {
+    add_management_page(
+        'Block Converter',
+        'Block Converter',
+        'manage_options',
+        'block-converter',
+        'block_converter_page'
+    );
+}
+add_action('admin_menu', 'add_block_converter_page');
+
+/**
+ * Block converter page callback
+ */
+function block_converter_page() {
+	if (!current_user_can('manage_options')) {
+		wp_die(__('You do not have sufficient permissions to access this page.'));
+	}
+	
+	echo '<div class="wrap">';
+	echo '<h1>Convert Classic Paragraph Blocks to Regular Blocks</h1>';
+	echo '<p>This tool will convert content that was previously converted to classic paragraph blocks back to regular blocks. This helps prevent content loss when users accidentally paste block content into paragraph blocks.</p>';
+	
+	if (isset($_POST['convert_blocks'])) {
+		$dry_run = isset($_POST['dry_run']) ? true : false;
+		$limit = isset($_POST['limit']) ? max(0, intval($_POST['limit'])) : 0;
+		$post_types = isset($_POST['post_types']) && is_array($_POST['post_types']) ? array_map('sanitize_text_field', $_POST['post_types']) : array('post','page');
+		$post_statuses = isset($_POST['post_statuses']) && is_array($_POST['post_statuses']) ? array_map('sanitize_text_field', $_POST['post_statuses']) : array('publish');
+		$single_page_id = isset($_POST['single_page_id']) ? max(0, intval($_POST['single_page_id'])) : 0;
+
+		// If a single page ID is provided, convert only that page
+		if ($single_page_id > 0) {
+			$single_result = convert_single_page_classic_paragraphs($single_page_id, $dry_run);
+			if ($single_result && isset($single_result['success']) && $single_result['success']) {
+				$results = array(
+					'total_posts' => 1,
+					'posts_processed' => 1,
+					'posts_converted' => !empty($single_result['content_changed']) ? 1 : 0,
+					'dry_run' => $dry_run,
+					'details' => array($single_result)
+				);
+			} else {
+				$error_msg = is_array($single_result) && isset($single_result['error']) ? $single_result['error'] : 'Unknown error';
+				echo '<div class="notice notice-error"><p>Conversion failed for page ID ' . intval($single_page_id) . ': ' . esc_html($error_msg) . '</p></div>';
+				$results = array(
+					'total_posts' => 0,
+					'posts_processed' => 0,
+					'posts_converted' => 0,
+					'dry_run' => $dry_run,
+					'details' => array()
+				);
+			}
+		} else {
+			// Otherwise run bulk conversion
+			$results = convert_classic_paragraphs_to_blocks_bulk($dry_run, $post_types, $limit, $post_statuses);
+		}
+		
+		echo '<div class="notice notice-success">';
+		echo '<p>Block conversion has been processed!</p>';
+		echo '<p>Total posts found: ' . intval($results['total_posts']) . '</p>';
+		echo '<p>Posts processed: ' . intval($results['posts_processed']) . '</p>';
+		echo '<p>Posts converted: ' . intval($results['posts_converted']) . '</p>';
+		if ($results['dry_run']) {
+			echo '<p><strong>This was a dry run. No changes were made.</strong></p>';
+		}
+		echo '</div>';
+
+		if (!empty($results['details'])) {
+			echo '<h3>Details</h3>';
+			echo '<table class="wp-list-table widefat fixed striped">';
+			echo '<thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Converted</th></tr></thead>';
+			echo '<tbody>';
+			foreach ($results['details'] as $detail) {
+				$post_obj = get_post($detail['page_id']);
+				$type = $post_obj ? $post_obj->post_type : '';
+				echo '<tr>';
+				echo '<td>' . intval($detail['page_id']) . '</td>';
+				echo '<td>' . esc_html($detail['page_title']) . '</td>';
+				echo '<td>' . esc_html($type) . '</td>';
+				echo '<td>' . (!empty($detail['content_changed']) ? 'Yes' : 'No') . '</td>';
+				echo '</tr>';
+			}
+			echo '</tbody></table>';
+		}
+	}
+	
+	// Fetch public post types for selection
+	$public_types = get_post_types(array('public' => true), 'objects');
+	
+	echo '<form method="post">';
+	echo '<p><label><input type="checkbox" name="dry_run" value="1" checked> Dry run (preview changes only)</label></p>';
+
+	// Single page targeting input
+	echo '<h3>Target Single Page (optional)</h3>';
+	echo '<p><label>Page ID: <input type="number" name="single_page_id" value="" min="1" style="width:140px;"></label> <span class="description">If set, only this page will be processed. Other filters below are ignored.</span></p>';
+
+	echo '<p><label>Limit (0 for all): <input type="number" name="limit" value="0" min="0"></label></p>';
+
+	echo '<h3>Post Types</h3>';
+	echo '<p>';
+	foreach ($public_types as $type) {
+		echo '<label style="margin-right:12px;"><input type="checkbox" name="post_types[]" value="' . esc_attr($type->name) . '" ' . checked(in_array($type->name, array('post','page'), true), true, false) . '> ' . esc_html($type->labels->singular_name) . '</label>';
+	}
+	echo '</p>';
+
+	echo '<h3>Post Statuses</h3>';
+	echo '<p>';
+	$statuses = array('publish', 'draft', 'pending', 'private');
+	foreach ($statuses as $status) {
+		echo '<label style="margin-right:12px;"><input type="checkbox" name="post_statuses[]" value="' . esc_attr($status) . '" ' . checked($status === 'publish', true, false) . '> ' . esc_html(ucfirst($status)) . '</label>';
+	}
+	echo '</p>';
+
+	echo '<p><input type="submit" name="convert_blocks" class="button button-primary" value="Convert Classic Paragraph Blocks"></p>';
+	echo '</form>';
+	echo '</div>';
+} 

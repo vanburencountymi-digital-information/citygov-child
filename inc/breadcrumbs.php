@@ -332,12 +332,6 @@ function get_section_info($post = null) {
     // Get the current page URL for more accurate detection
     $current_page_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
     
-    // Debug output (remove this after testing)
-    if (current_user_can('administrator')) {
-        error_log('Breadcrumb Debug - Current URL: ' . $current_url);
-        error_log('Breadcrumb Debug - Page URL: ' . $current_page_url);
-        error_log('Breadcrumb Debug - Site URL: ' . $site_url);
-    }
     
     // Check if we're in the forms section
     if (strpos($current_url, $site_url . 'forms/') === 0 || strpos($current_page_url, $site_url . 'forms/') === 0) {

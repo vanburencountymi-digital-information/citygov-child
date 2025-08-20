@@ -24,13 +24,11 @@ function get_department_root_page_id($post_id = null) {
     if ($post_id === null) {
         global $post;
         if (!$post) {
-            // error_log("get_department_root_page_id: No current post found");
             return null;
         }
         $post_id = $post->ID;
     }
     
-    // error_log("get_department_root_page_id: Starting with post_id = {$post_id}");
     
     // Start with the current page
     $current_id = $post_id;
@@ -39,28 +37,23 @@ function get_department_root_page_id($post_id = null) {
     while ($current_id > 0) {
         // Check if current page has department_id
         $department_id = get_post_meta($current_id, 'department_id', true);
-        error_log("get_department_root_page_id: Checking page {$current_id}, department_id = '{$department_id}'");
         
         if (!empty($department_id)) {
-            // error_log("get_department_root_page_id: Found department_id '{$department_id}' on page {$current_id}");
             return $current_id; // Return the page ID, not the department_id value
         }
         
         // Get the parent page
         $parent_id = wp_get_post_parent_id($current_id);
-        error_log("get_department_root_page_id: Parent of {$current_id} is {$parent_id}");
         
         if ($parent_id === 0) {
             // We've reached the top of the hierarchy
-            // error_log("get_department_root_page_id: Reached top of hierarchy, no department_id found");
             break;
         }
         
         $current_id = $parent_id;
     }
     
-    // No department_id found in the entire hierarchy
-    // error_log("get_department_root_page_id: No department_id found in hierarchy starting from {$post_id}");
+    // No department_id found in the entire hierarchy  
     return null;
 }
 
@@ -513,6 +506,185 @@ function set_department_subpage_templates($dry_run = true, $limit = 0) {
                     );
                 }
             }
+        }
+    }
+    
+    return $results;
+} 
+
+/**
+ * Convert classic paragraph blocks back to regular blocks
+ * 
+ * This function converts content that was previously converted to classic paragraph blocks
+ * back to regular blocks to prevent content loss when users paste block content.
+ * 
+ * @param string $content The content to convert
+ * @return string The converted content
+ */
+function convert_classic_paragraphs_to_blocks($content) {
+    // Fast path for non-strings or empty content
+    if (!is_string($content) || $content === '') {
+        return $content;
+    }
+    
+    // If content already has block comments, it's already in block format
+    if (strpos($content, '<!-- wp:') !== false) {
+        return $content;
+    }
+    
+    // Split content into paragraphs
+    $paragraphs = preg_split('/\n\s*\n/', trim($content));
+    $converted_content = '';
+    
+    foreach ($paragraphs as $paragraph) {
+        $paragraph = trim($paragraph);
+        if (empty($paragraph)) {
+            continue;
+        }
+        
+        // Check if this paragraph contains block-level HTML elements
+        $block_elements = array(
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'div', 'section', 'article', 'aside', 'header', 'footer',
+            'blockquote', 'pre', 'table', 'ul', 'ol', 'li',
+            'figure', 'figcaption', 'video', 'audio', 'embed'
+        );
+        
+        $has_block_elements = false;
+        foreach ($block_elements as $element) {
+            if (preg_match('/<' . $element . '\b/i', $paragraph)) {
+                $has_block_elements = true;
+                break;
+            }
+        }
+        
+        // If paragraph contains block elements, wrap it in appropriate block
+        if ($has_block_elements) {
+            // Determine the appropriate block type based on content
+            if (preg_match('/<h[1-6]\b/i', $paragraph)) {
+                // Extract heading level
+                preg_match('/<h([1-6])\b/i', $paragraph, $matches);
+                $level = $matches[1];
+                $converted_content .= "<!-- wp:heading {\"level\":{$level}} -->\n";
+                $converted_content .= $paragraph . "\n";
+                $converted_content .= "<!-- /wp:heading -->\n\n";
+            } elseif (preg_match('/<blockquote\b/i', $paragraph)) {
+                $converted_content .= "<!-- wp:quote -->\n";
+                $converted_content .= "<blockquote class=\"wp-block-quote\">\n";
+                $converted_content .= $paragraph . "\n";
+                $converted_content .= "</blockquote>\n";
+                $converted_content .= "<!-- /wp:quote -->\n\n";
+            } elseif (preg_match('/<pre\b/i', $paragraph)) {
+                $converted_content .= "<!-- wp:code -->\n";
+                $converted_content .= "<pre class=\"wp-block-code\">\n";
+                $converted_content .= $paragraph . "\n";
+                $converted_content .= "</pre>\n";
+                $converted_content .= "<!-- /wp:code -->\n\n";
+            } elseif (preg_match('/<ul\b|ol\b/i', $paragraph)) {
+                $converted_content .= "<!-- wp:list -->\n";
+                $converted_content .= $paragraph . "\n";
+                $converted_content .= "<!-- /wp:list -->\n\n";
+            } elseif (preg_match('/<table\b/i', $paragraph)) {
+                $converted_content .= "<!-- wp:table -->\n";
+                $converted_content .= $paragraph . "\n";
+                $converted_content .= "<!-- /wp:table -->\n\n";
+            } elseif (preg_match('/<figure\b/i', $paragraph)) {
+                $converted_content .= "<!-- wp:image -->\n";
+                $converted_content .= $paragraph . "\n";
+                $converted_content .= "<!-- /wp:image -->\n\n";
+            } else {
+                // Generic block wrapper for other block elements
+                $converted_content .= "<!-- wp:html -->\n";
+                $converted_content .= $paragraph . "\n";
+                $converted_content .= "<!-- /wp:html -->\n\n";
+            }
+        } else {
+            // Regular paragraph content - wrap in paragraph block
+            $converted_content .= "<!-- wp:paragraph -->\n";
+            $converted_content .= "<p>" . $paragraph . "</p>\n";
+            $converted_content .= "<!-- /wp:paragraph -->\n\n";
+        }
+    }
+    
+    return trim($converted_content);
+}
+
+/**
+ * Convert classic paragraph blocks for a single page
+ * 
+ * @param int $page_id The page ID
+ * @param bool $dry_run Whether to perform a dry run
+ * @return array Results of the conversion operation
+ */
+function convert_single_page_classic_paragraphs($page_id, $dry_run = true) {
+    $page = get_post($page_id);
+    if (!$page) {
+        return array('success' => false, 'error' => 'Page not found');
+    }
+    
+    $original_content = $page->post_content;
+    $converted_content = convert_classic_paragraphs_to_blocks($original_content);
+    
+    $content_changed = $original_content !== $converted_content;
+    
+    if (!$dry_run && $content_changed) {
+        $update_result = wp_update_post(array(
+            'ID' => $page_id,
+            'post_content' => $converted_content
+        ));
+        
+        if (is_wp_error($update_result)) {
+            return array('success' => false, 'error' => $update_result->get_error_message());
+        }
+    }
+    
+    return array(
+        'success' => true,
+        'page_id' => $page_id,
+        'page_title' => $page->post_title,
+        'content_changed' => $content_changed,
+        'dry_run' => $dry_run
+    );
+}
+
+/**
+ * Convert classic paragraph blocks across multiple posts/pages
+ * 
+ * @param bool $dry_run Whether to perform a dry run
+ * @param array $post_types Array of post types to process
+ * @param int $limit Maximum number of posts to process
+ * @param array $post_statuses Array of post statuses to include (default: array('publish'))
+ * @return array Results of the conversion operation
+ */
+function convert_classic_paragraphs_to_blocks_bulk($dry_run = true, $post_types = array('post', 'page'), $limit = 0, $post_statuses = array('publish')) {
+    $args = array(
+        'post_type' => $post_types,
+        'post_status' => $post_statuses,
+        'posts_per_page' => $limit > 0 ? $limit : -1,
+        'orderby' => 'ID',
+        'order' => 'ASC'
+    );
+    
+    $posts = get_posts($args);
+    $results = array(
+        'total_posts' => count($posts),
+        'posts_processed' => 0,
+        'posts_converted' => 0,
+        'dry_run' => $dry_run,
+        'details' => array()
+    );
+    
+    foreach ($posts as $post) {
+        $convert_result = convert_single_page_classic_paragraphs($post->ID, $dry_run);
+        
+        if ($convert_result['success']) {
+            $results['posts_processed']++;
+            
+            if ($convert_result['content_changed']) {
+                $results['posts_converted']++;
+            }
+            
+            $results['details'][] = $convert_result;
         }
     }
     

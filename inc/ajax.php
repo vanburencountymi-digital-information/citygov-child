@@ -61,25 +61,8 @@ function handle_replace_pdf_document() {
         wp_die(json_encode(array('success' => false, 'data' => 'Invalid document object')));
     }
     
-    // Debug: Log all post meta to understand Document Library Pro structure
-    $all_post_meta = get_post_meta($post_id);
-    error_log('Document Library Pro Debug - All post meta for post ' . $post_id . ': ' . print_r($all_post_meta, true));
-    
-    // Get current file ID from post meta (this is what Document Library Pro actually uses)
+    // Get current file ID from post meta
     $current_file_id = get_post_meta($post_id, '_dlp_attached_file_id', true);
-    error_log('Document Library Pro Debug - Current file ID: ' . $current_file_id);
-    
-    // Debug: Check what methods are available on the document object
-    if (is_object($document)) {
-        $methods = get_class_methods($document);
-        error_log('Document Library Pro Debug - Available methods: ' . print_r($methods, true));
-        
-        // Try to get download URL to see how it works
-        if (method_exists($document, 'get_download_url')) {
-            $download_url = $document->get_download_url();
-            error_log('Document Library Pro Debug - Download URL: ' . $download_url);
-        }
-    }
     
     // Upload the new file
     require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -110,18 +93,13 @@ function handle_replace_pdf_document() {
     $attachment_data = wp_generate_attachment_metadata($attachment_id, $upload['file']);
     wp_update_attachment_metadata($attachment_id, $attachment_data);
     
-    // Debug: Log the new attachment ID
-    error_log('Document Library Pro Debug - New attachment ID: ' . $attachment_id);
-    
     // Use the document object's set_file_id method to properly update the file
     if (method_exists($document, 'set_file_id')) {
         $document->set_file_id($attachment_id);
-        error_log('Document Library Pro Debug - Set file ID via document object');
     }
     
     // Update the correct post meta that Document Library Pro uses
     $update_result = update_post_meta($post_id, '_dlp_attached_file_id', $attachment_id);
-    error_log('Document Library Pro Debug - Update _dlp_attached_file_id result: ' . ($update_result ? 'true' : 'false'));
     
     // Also update the attachment_id meta for consistency
     update_post_meta($post_id, '_dlp_attachment_id', $attachment_id);
@@ -137,18 +115,12 @@ function handle_replace_pdf_document() {
     // Delete the old attachment if it exists and is different
     if ($current_file_id && $current_file_id !== $attachment_id) {
         $delete_result = wp_delete_attachment($current_file_id, true);
-        error_log('Document Library Pro Debug - Delete old attachment result: ' . ($delete_result ? 'true' : 'false'));
     }
-    
-    // Debug: Log final post meta after update
-    $final_post_meta = get_post_meta($post_id);
-    error_log('Document Library Pro Debug - Final post meta: ' . print_r($final_post_meta, true));
     
     // Refresh the document object to ensure it has the new file
     $updated_document = dlp_get_document($post_id);
     if ($updated_document && method_exists($updated_document, 'get_download_url')) {
         $new_download_url = $updated_document->get_download_url();
-        error_log('Document Library Pro Debug - New download URL: ' . $new_download_url);
     }
     
     wp_die(json_encode(array('success' => true, 'data' => 'PDF replaced successfully')));
@@ -359,3 +331,27 @@ function handle_fix_html_blocks_ajax() {
     wp_die(json_encode($results));
 }
 add_action('wp_ajax_fix_html_blocks', 'handle_fix_html_blocks_ajax'); 
+
+/**
+ * AJAX handler for converting classic paragraph blocks
+ */
+function handle_convert_classic_paragraphs_ajax() {
+    // Check nonce for security
+    if (!wp_verify_nonce($_POST['block_convert_nonce'], 'convert_classic_paragraphs')) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Security check failed')));
+    }
+    
+    // Check user permissions
+    if (!current_user_can('manage_options')) {
+        wp_die(json_encode(array('success' => false, 'message' => 'Insufficient permissions')));
+    }
+    
+    $dry_run = isset($_POST['dry_run']) && $_POST['dry_run'] === 'true';
+    $post_types = isset($_POST['post_types']) ? explode(',', $_POST['post_types']) : array('post', 'page');
+    $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 0;
+    
+    $results = convert_classic_paragraphs_to_blocks_bulk($dry_run, $post_types, $limit);
+    
+    wp_die(json_encode($results));
+}
+add_action('wp_ajax_convert_classic_paragraphs', 'handle_convert_classic_paragraphs_ajax'); 
